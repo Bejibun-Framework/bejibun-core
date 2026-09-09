@@ -111,23 +111,14 @@ export default class RouterBuilder {
             }
             routeGroups = Object.assign({}, ...routerGroups.map((value) => this.applyGroup(value)), newRoutes);
         };
-        if (this.hasRaws(routes)) {
-            const routeList = Array.isArray(routes)
-                ? routes.flat()
-                : [routes];
+        const routeList = Array.isArray(routes)
+            ? routes.flat()
+            : [routes];
+        if (routeList.some((value) => this.hasRaws(value) || this.hasRaw(value))) {
             const routerGroups = routeList.filter((value) => !this.hasRaws(value) && !this.hasRaw(value));
             const rawRoutes = routeList
-                .filter((value) => this.hasRaws(value))
-                .map((value) => value.raws)
-                .flat();
-            compile(rawRoutes, routerGroups);
-        }
-        if (this.hasRaw(routes)) {
-            const routeList = Array.isArray(routes)
-                ? routes.flat()
-                : [routes];
-            const routerGroups = routeList.filter((value) => !this.hasRaws(value) && !this.hasRaw(value));
-            const rawRoutes = routeList.filter((value) => this.hasRaw(value));
+                .filter((value) => this.hasRaws(value) || this.hasRaw(value))
+                .flatMap((value) => this.hasRaws(value) ? value.raws : [value]);
             compile(rawRoutes, routerGroups);
         }
         if (isNotEmpty(routeGroups))

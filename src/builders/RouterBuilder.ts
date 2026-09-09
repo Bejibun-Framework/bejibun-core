@@ -147,31 +147,24 @@ export default class RouterBuilder {
             );
         };
 
-        if (this.hasRaws(routes)) {
-            const routeList: Array<RawsRoute | Route | RouterGroup> = Array.isArray(routes)
-                ? routes.flat()
-                : [routes];
+        const routeList: Array<RawsRoute | Route | RouterGroup> = Array.isArray(routes)
+            ? routes.flat()
+            : [routes];
+
+        if (
+            routeList.some(
+                (value: RawsRoute | Route | RouterGroup) =>
+                    this.hasRaws(value) || this.hasRaw(value)
+            )
+        ) {
             const routerGroups: Array<RouterGroup> = routeList.filter(
                 (value: Route | RouterGroup) => !this.hasRaws(value) && !this.hasRaw(value)
             );
             const rawRoutes: Array<Route> = routeList
-                .filter((value: Route | RouterGroup) => this.hasRaws(value))
-                .map((value: RawsRoute) => value.raws)
-                .flat();
-
-            compile(rawRoutes, routerGroups);
-        }
-
-        if (this.hasRaw(routes)) {
-            const routeList: Array<Route | RouterGroup> = Array.isArray(routes)
-                ? routes.flat()
-                : [routes];
-            const routerGroups: Array<RouterGroup> = routeList.filter(
-                (value: Route | RouterGroup) => !this.hasRaws(value) && !this.hasRaw(value)
-            );
-            const rawRoutes: Array<Route> = routeList.filter((value: Route | RouterGroup) =>
-                this.hasRaw(value)
-            );
+                .filter((value: Route | RouterGroup) => this.hasRaws(value) || this.hasRaw(value))
+                .flatMap((value: Route | RouterGroup) =>
+                    this.hasRaws(value) ? value.raws : [value]
+                );
 
             compile(rawRoutes, routerGroups);
         }

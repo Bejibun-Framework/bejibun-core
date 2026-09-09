@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.16](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.15...v0.6.16) - 2026-09-09
+
+### 🩹 Fixes
+#### `group()` drops mixed `raw` routes
+`RouterBuilder.group()` issued two separate passes (`hasRaws` then `hasRaw`), each calling `compile()` and overwriting the accumulated `routeGroups`. Mixing already-grouped routes (`prefix(...).group([...])`) with a direct route (`Router.get("benchmark", ...)`) in the same array caused the first pass's result to be replaced by the second -- leaving only the direct route registered. Both passes now fold into a single pass over the flattened list, so `raw` and `raws` entries coexist.
+
+### 📖 Changes
+
+### 📦 Dependencies
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.15](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.14...v0.6.15) - 2026-09-09
 
 ### 🩹 Fixes
