@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.15](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.14...v0.6.15) - 2026-09-09
+
+### 🩹 Fixes
+
+### 📖 Changes
+#### Performance: Request Middleware & Request Helpers
+Reduced per-request overhead on read-only endpoints (`GET`/`HEAD`) significantly:
+
+- `RequestMiddleware` now short-circuits **synchronously** for requests with no body, no query string, and no route params, skipping the promise/microtask cost of the async parsing path entirely. Body/query/param parsing only runs when the request actually carries data (see `Message: parseAndContinue`)
+- `attachRequestHelpers` no longer allocates 36 closures per request. The 36 fluent `request.*` helpers are now defined once at module scope in `src/request-helpers.ts` and attached with a single `Object.assign(...)`. The dispatching `server` is tracked in a `WeakMap` (used only by `request.ip()`), so helper methods stay closure-free and read their state from `this`
+- Verified behaviorally: plain `GET`, query strings, route params, JSON/form/text bodies, and all 36 helpers return identical results before/after
+- Benchmark (wrk, 4 threads, 128 connections, on a bare `GET` hello route): RequestMiddleware throughput improved **~27%**, latency p99 **~18%** lower
+
+### 📦 Dependencies
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.14](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.12...v0.6.14) - 2026-09-08
 
 ### 🩹 Fixes

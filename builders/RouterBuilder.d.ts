@@ -271,14 +271,6 @@ export default class RouterBuilder {
      */
     private attachRequestHelpers;
     /**
-     * Normalizes a single key or array of keys into a flat array of keys,
-     * used by the payload-inspecting request helpers (`only`, `except`,
-     * `has`, `hasAny`, `filled`, `missing`).
-     *
-     * @returns {Array<string>} The normalized key list.
-     */
-    private toArrayKeys;
-    /**
      * Joins a base path and a relative path into a single normalized,
      * leading-slash path, collapsing duplicate/trailing slashes.
      *

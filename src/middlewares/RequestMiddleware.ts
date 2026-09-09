@@ -28,47 +28,83 @@ export default class RequestMiddleware {
      * @returns {HandlerType} The payload-populating handler.
      */
     public handle(handler: HandlerType): HandlerType {
-        return async (request: Bejibun.Request, server: Bun.Server<any>) => {
+        return (request: Bejibun.Request, server: Bun.Server<any>) => {
             const contentType: string = request.headers.get("content-type") || "";
 
-            const payload: Record<string, any> = {};
-
-            const isJson = contentType.includes("application/json");
-            const isForm =
+            const isJson: boolean = contentType.includes("application/json");
+            const isForm: boolean =
                 contentType.includes("multipart/form-data") ||
                 contentType.includes("application/x-www-form-urlencoded");
 
-            try {
-                if (isJson) Object.assign(payload, await request.json());
+            // Fast path for read-only requests with no body, no query string,
+            // and no route params: short-circuits to the handler synchronously,
+            // avoiding the promise/microtask cost of the async parsing path.
+            const method: string = request.method.toUpperCase();
+            if (
+                (method === "GET" || method === "HEAD") &&
+                !isJson &&
+                !isForm &&
+                !request.url.includes("?") &&
+                Object.keys(request.params).length === 0
+            ) {
+                request.payload = {};
 
-                for (const [key, value] of Object.entries(request.params)) {
-                    payload[key] = value;
-                }
+                return handler(request, server);
+            }
 
+            return this.parseAndContinue(request, server, handler, isJson, isForm);
+        };
+    }
+
+    /**
+     * Async path: reads the request body/query/route params into a single
+     * flat `request.payload`, then invokes the handler. Only reached when
+     * the request actually carries a body, a query string, route params,
+     * or a non-GET method -- see `handle` for the synchronous fast path.
+     */
+    private async parseAndContinue(
+        request: Bejibun.Request,
+        server: Bun.Server<any>,
+        handler: HandlerType,
+        isJson: boolean,
+        isForm: boolean
+    ): Promise<any> {
+        const payload: Record<string, any> = {};
+
+        const hasBody = !["GET", "HEAD"].includes(request.method.toUpperCase());
+
+        try {
+            if (isJson && hasBody) Object.assign(payload, await request.json());
+
+            for (const [key, value] of Object.entries(request.params)) {
+                payload[key] = value;
+            }
+
+            if (request.url.includes("?")) {
                 const url = new URL(request.url);
                 for (const [key, value] of url.searchParams) {
                     payload[key] = value;
                 }
-
-                if (isForm) {
-                    const body = await request.formData();
-
-                    for (const [key, value] of body) {
-                        payload[key] = value;
-                    }
-                }
-
-                if (!isJson && !isForm) {
-                    const text = await request.text();
-                    if (text) payload.plainText = text;
-                }
-            } catch {
-                // do nothing
             }
 
-            request.payload = payload;
+            if (isForm && hasBody) {
+                const body = await request.formData();
 
-            return handler(request, server);
-        };
+                for (const [key, value] of body) {
+                    payload[key] = value;
+                }
+            }
+
+            if (!isJson && !isForm && hasBody) {
+                const text = await request.text();
+                if (text) payload.plainText = text;
+            }
+        } catch {
+            // do nothing
+        }
+
+        request.payload = payload;
+
+        return handler(request, server);
     }
 }

@@ -27,4 +27,11 @@ export default class RequestMiddleware {
      * @returns {HandlerType} The payload-populating handler.
      */
     handle(handler: HandlerType): HandlerType;
+    /**
+     * Async path: reads the request body/query/route params into a single
+     * flat `request.payload`, then invokes the handler. Only reached when
+     * the request actually carries a body, a query string, route params,
+     * or a non-GET method -- see `handle` for the synchronous fast path.
+     */
+    private parseAndContinue;
 }
