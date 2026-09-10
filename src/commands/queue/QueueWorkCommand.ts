@@ -128,7 +128,7 @@ export default class QueueWorkCommand {
                             `Job class has no handle function in [${job.queue}].`
                         );
 
-                    instance.handle(Bun.JSON5.parse(job.payload));
+                    await instance.handle(Bun.JSON5.parse(job.payload));
                 };
 
                 try {

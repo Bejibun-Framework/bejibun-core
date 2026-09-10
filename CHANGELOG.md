@@ -3,6 +3,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.17](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.16...v0.6.17) - 2026-09-10
+
+### 🩹 Fixes
+#### Queue jobs never retried: missed `await` on `handle()`
+`QueueWorkCommand` (and `QueueRetryCommand`) invoked the job handler without awaiting it,
+so an async `handle()` that rejected produced an unhandled rejection instead of hitting the worker's `try/catch`.
+The job was then deleted as if it had succeeded and `attempts` never incremented --
+retries and dead-lettering were unreachable. The handler call is now awaited in both commands.
+
+### 📖 Changes
+
+### 📦 Dependencies
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.16](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.15...v0.6.16) - 2026-09-09
 
 ### 🩹 Fixes
