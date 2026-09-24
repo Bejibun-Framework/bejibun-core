@@ -15,9 +15,17 @@ const config: Record<string, any> = {
         /** Database-backed queue: persists jobs as rows via `JobModel`. */
         database: {
             driver: QueueDriverEnum.Database,
+
             table: JobModel.tableName,
+
             /** Seconds before a reserved-but-unfinished job is considered abandoned and reclaimed. */
-            retry_after: 60
+            retry_after: 60,
+
+            /** Seconds the worker idles between polls when the queue is empty (falls back to `retry_after`). */
+            poll_interval: 3,
+
+            /** Seconds the worker waits before retrying after a failed attempt (falls back to `retry_after`). */
+            retry_delay: 5
         }
     }
 };

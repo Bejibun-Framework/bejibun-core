@@ -3,6 +3,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.21](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.20...v0.6.21) - 2026-09-24
+
+### 🩹 Fixes
+- `queue:work` no longer delays shutdown: the idle/retry sleeps are now interruptible (`clearTimeout`-based), so a signal (`SIGINT`/`SIGTERM`) stops the worker immediately after the in-flight job instead of waiting out the current `retry_after` poll (previously up to ~60s of apparent hang)
+
+### 📖 Changes
+- Split the single `retry_after` knob into three independent connection settings (all in seconds, backward compatible -- `poll_interval`/`retry_delay` fall back to `retry_after` when unset):
+  - `retry_after` -- how long a reserved-but-unfinished job stays claimable only by the worker that reserved it (reservation/visibility timeout)
+  - `poll_interval` -- how long the worker idles between polls when the queue is empty
+  - `retry_delay` -- how long the worker waits before retrying after a failed attempt
+- `queue:retry` signal handling aligned with `queue:work` (synchronous `stop()` + consistent log line)
+
+### 📦 Dependencies
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.20](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.19...v0.6.20) - 2026-09-24
 
 ### 🩹 Fixes

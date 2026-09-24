@@ -47,9 +47,13 @@ export default class QueueWorkCommand {
      * `retry_after` seconds - i.e. presumed abandoned by a crashed worker),
      * dynamically importing and running its handler, and deleting it on
      * success or incrementing `attempts` and releasing the reservation on
-     * failure. Sleeps for `retry_after` seconds whenever there's nothing
-     * to claim. Listens for `exit`/`SIGINT`/`SIGTERM` to stop the loop
-     * gracefully after the current iteration.
+     * failure. Idles for `poll_interval` seconds when nothing is claimable
+     * and waits `retry_delay` seconds before retrying after a failed
+     * attempt - three independent knobs, separate from the reservation
+     * timeout. Listens for `exit`/`SIGINT`/`SIGTERM` to stop the loop
+     * gracefully after the current iteration. A stop signal resolves the
+     * interruptible sleep immediately, so a long `retry_after` never delays
+     * shutdown -- the worker finishes the in-flight job (if any) and exits.
      */
     async handle() {
         const configPath = App.Path.configPath("queue.ts");
@@ -61,20 +65,51 @@ export default class QueueWorkCommand {
         if (!config)
             throw new QueueException("There is no config provided.");
         const currentConnection = config.connections[config.default];
+        // Independent tuning knobs: reservation timeout vs. idle poll vs. retry backoff.
         const retryAfter = Number(currentConnection?.retry_after) || 60;
+        const pollInterval = Number(currentConnection?.poll_interval) || retryAfter;
+        const retryDelay = Number(currentConnection?.retry_delay) || retryAfter;
         let running = true;
-        process.on("exit", async () => {
-            running = false;
-            Logger.setContext("Queue").info("Queue worker stopped.");
+        let resolveStop = null;
+        const stopped = new Promise((resolve) => {
+            resolveStop = resolve;
         });
-        process.on("SIGINT", async () => {
+        const sleepTimers = [];
+        /**
+         * Sleeps for `ms`, cancelled the moment a stop signal arrives.
+         * A plain `Bun.sleep` keeps its event-loop timer alive even after the
+         * race resolves, so this uses a clearable `setTimeout` instead --
+         * a long `retry_after` never delays shutdown.
+         */
+        const interruptibleSleep = (ms) => {
+            return new Promise((resolve) => {
+                const timer = setTimeout(() => {
+                    const index = sleepTimers.indexOf(timer);
+                    if (index !== -1)
+                        sleepTimers.splice(index, 1);
+                    resolve();
+                }, ms);
+                sleepTimers.push(timer);
+                void stopped.then(() => {
+                    const index = sleepTimers.indexOf(timer);
+                    if (index !== -1)
+                        sleepTimers.splice(index, 1);
+                    clearTimeout(timer);
+                    resolve();
+                });
+            });
+        };
+        const stop = (signal) => {
             running = false;
-            Logger.setContext("Queue").info("Stopping queue worker, SIGINT sent.");
-        });
-        process.on("SIGTERM", async () => {
-            running = false;
-            Logger.setContext("Queue").info("Stopping queue worker, SIGTERM sent.");
-        });
+            resolveStop?.();
+            for (const timer of sleepTimers)
+                clearTimeout(timer);
+            sleepTimers.length = 0;
+            Logger.setContext("Queue").info(`Stopping queue worker, ${signal} sent.`);
+        };
+        process.on("exit", () => stop("exit"));
+        process.on("SIGINT", () => stop("SIGINT"));
+        process.on("SIGTERM", () => stop("SIGTERM"));
         Logger.setContext("Queue").info("Queue worker started.");
         while (running) {
             // Jobs reserved before this cutoff are treated as abandoned (e.g. worker crash) and become claimable again.
@@ -86,7 +121,7 @@ export default class QueueWorkCommand {
                 .orderBy("id", "asc")
                 .first();
             if (!job?.id) {
-                await Bun.sleep(retryAfter * 1000);
+                await interruptibleSleep(pollInterval * 1000);
             }
             else {
                 // Atomically claim the job by stamping `reserved_at`, re-checking the same eligibility
@@ -123,7 +158,7 @@ export default class QueueWorkCommand {
                         attempts: (Number(job.attempts) || 0) + 1,
                         reserved_at: null
                     });
-                    await Bun.sleep(retryAfter * 1000);
+                    await interruptibleSleep(retryDelay * 1000);
                 }
             }
         }

@@ -41,22 +41,24 @@ export default class QueueRetryCommand {
 
     /**
      * Executes this command.
+     *
+     * Loops through failed jobs (attempts >= 3 and unreserved), re-claims
+     * and re-runs each one, deleting it on success or bumping `attempts` and
+     * releasing the reservation on failure. Stops when no eligible jobs
+     * remain or when a stop signal (`SIGINT`/`SIGTERM`/`exit`) arrives after
+     * the in-flight job, mirroring the `queue:work` shutdown contract.
      */
     public async handle(): Promise<void> {
         let running: boolean = true;
 
-        process.on("exit", async (): Promise<void> => {
+        const stop = (signal: string): void => {
             running = false;
-            Logger.setContext("Queue").info("Queue worker stopped.");
-        });
-        process.on("SIGINT", async (): Promise<void> => {
-            running = false;
-            Logger.setContext("Queue").info("Stopping queue worker, SIGINT sent.");
-        });
-        process.on("SIGTERM", async (): Promise<void> => {
-            running = false;
-            Logger.setContext("Queue").info("Stopping queue worker, SIGTERM sent.");
-        });
+            Logger.setContext("Queue").info(`Stopping queue worker, ${signal} sent.`);
+        };
+
+        process.on("exit", (): void => stop("exit"));
+        process.on("SIGINT", (): void => stop("SIGINT"));
+        process.on("SIGTERM", (): void => stop("SIGTERM"));
 
         while (running) {
             const job: any = await JobModel.query()

@@ -39,9 +39,13 @@ export default class QueueWorkCommand {
      * `retry_after` seconds - i.e. presumed abandoned by a crashed worker),
      * dynamically importing and running its handler, and deleting it on
      * success or incrementing `attempts` and releasing the reservation on
-     * failure. Sleeps for `retry_after` seconds whenever there's nothing
-     * to claim. Listens for `exit`/`SIGINT`/`SIGTERM` to stop the loop
-     * gracefully after the current iteration.
+     * failure. Idles for `poll_interval` seconds when nothing is claimable
+     * and waits `retry_delay` seconds before retrying after a failed
+     * attempt - three independent knobs, separate from the reservation
+     * timeout. Listens for `exit`/`SIGINT`/`SIGTERM` to stop the loop
+     * gracefully after the current iteration. A stop signal resolves the
+     * interruptible sleep immediately, so a long `retry_after` never delays
+     * shutdown -- the worker finishes the in-flight job (if any) and exits.
      */
     handle(): Promise<void>;
 }
