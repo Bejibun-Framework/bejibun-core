@@ -319,6 +319,8 @@ export const RequestWrapper = {
      */
     array(key) {
         const value = this.get(key);
+        if (!value)
+            return [];
         return Array.isArray(value) ? value : [value];
     },
     /**

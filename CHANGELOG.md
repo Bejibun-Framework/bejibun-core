@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.18](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.17...v0.6.18) - 2026-09-24
+
+### 🩹 Fixes
+- `request.array()` now returns an empty array (`[]`) instead of `[undefined]` when the request payload is empty
+
+### 📖 Changes
+
+### 📦 Dependencies
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.17](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.16...v0.6.17) - 2026-09-10
 
 ### 🩹 Fixes

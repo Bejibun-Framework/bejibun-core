@@ -360,6 +360,8 @@ export const RequestWrapper: Record<string, any> = {
     array(this: Bejibun.Request, key: string): Array<any> {
         const value: any = this.get(key);
 
+        if (!value) return [];
+
         return Array.isArray(value) ? value : [value];
     },
 
