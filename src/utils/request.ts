@@ -18,8 +18,9 @@ import {validatePayload} from "@/utils/validate";
 export const RequestServers: WeakMap<Bejibun.Request, Bun.Server<any>> = new WeakMap();
 
 /**
- * Normalizes a single key or array of keys into a flat array of keys,
- * used by the payload-inspecting helpers (`only`, `except`, `has`,
+ * Normalizes a single key or array of keys into a flat array of keys.
+ *
+ * Used by the payload-inspecting helpers (`only`, `except`, `has`,
  * `hasAny`, `filled`, `missing`).
  *
  * @param {string | Array<string>} keys - A single key or array of keys.
@@ -27,6 +28,187 @@ export const RequestServers: WeakMap<Bejibun.Request, Bun.Server<any>> = new Wea
  */
 export function toArrayKeys(keys: string | Array<string>): Array<string> {
     return Array.isArray(keys) ? keys : [keys];
+}
+
+/**
+ * Reserved prototype-ish path segments that are rejected by nested payload
+ * traversal, mirroring the `allowPrototypes: false` behaviour of the `qs`
+ * parser. Guarding these blocks `?__proto__[polluted]=1`-style global
+ * prototype pollution and `has("constructor")` false-positives.
+ *
+ * @internal
+ */
+const BLOCKED_SEGMENTS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Splits a payload key into path segments, tolerating Laravel-style bracket
+ * notation and dot notation. Empty segments (from the `[]` append form) are
+ * dropped.
+ *
+ * @param {string} key - The payload key to split.
+ * @returns {Array<string>} The path segments, without empty entries.
+ */
+export function deepSegments(key: string): Array<string> {
+    if (!key.includes("[")) return key.split(".").filter(Boolean);
+
+    return key.split(/[[\]]+/).filter(Boolean);
+}
+
+/**
+ * Deep-resolves a value from a (possibly nested) payload by key.
+ *
+ * Supports flat keys, dot notation, and bracket notation. Own keys are
+ * matched verbatim first, so a literal `"order.date"` key stored by a flat
+ * source (e.g. a JSON body) still wins over an `order.date` deep path.
+ * Prototype-ish segments (`__proto__`, `constructor`, `prototype`) resolve
+ * to `undefined` rather than leaking inherited values.
+ *
+ * @param {Record<string, any>} payload - The parsed request payload.
+ * @param {string} key - The key to look up (flat, dot, or bracket notation).
+ * @returns {any} The resolved value, or `undefined` when absent/blocked.
+ */
+export function resolvePayload(payload: Record<string, any>, key: string): any {
+    if (Object.prototype.hasOwnProperty.call(payload, key)) return payload[key];
+
+    if (!key.includes(".") && !key.includes("[")) return undefined;
+
+    let cursor: any = payload;
+
+    for (const seg of deepSegments(key)) {
+        if (cursor === undefined || cursor === null) return undefined;
+        if (BLOCKED_SEGMENTS.has(seg)) return undefined;
+
+        cursor = cursor[seg];
+    }
+
+    return cursor;
+}
+
+/**
+ * Deep-presence check for a key that may use dot or bracket notation.
+ *
+ * Only *own* properties are considered present — inherited keys such as
+ * `constructor` or `toString` never report true, even through deep paths.
+ * Prototype-ish segments are treated as absent.
+ *
+ * @param {Record<string, any>} payload - The parsed request payload.
+ * @param {string} key - The key to check (flat, dot, or bracket notation).
+ * @returns {boolean} True when the key resolves to an own value.
+ */
+export function deepHas(payload: Record<string, any>, key: string): boolean {
+    if (Object.prototype.hasOwnProperty.call(payload, key)) return true;
+
+    if (!key.includes(".") && !key.includes("[")) return false;
+
+    let cursor: any = payload;
+    const segments: Array<string> = deepSegments(key);
+
+    for (const seg of segments) {
+        if (cursor === undefined || cursor === null) return false;
+        if (BLOCKED_SEGMENTS.has(seg)) return false;
+        if (!Object.prototype.hasOwnProperty.call(cursor, seg)) return false;
+
+        cursor = cursor[seg];
+    }
+
+    return true;
+}
+
+/**
+ * Assigns a raw query/form key/value pair into a nested payload structure by
+ * unwrapping Laravel-style bracket keys.
+ *
+ * Numeric segments build arrays, named segments build objects, and the empty
+ * `[]` segment appends to (or starts) an array. Prototype-ish segments are
+ * silently ignored.
+ *
+ * @param {Record<string, any>} target - The payload being built.
+ * @param {string} key - The key from `URLSearchParams`/`FormData`, possibly
+ *   containing bracket segments.
+ * @param {any} value - The raw string value to store.
+ * @returns {void}
+ */
+export function deepSetPayload(target: Record<string, any>, key: string, value: any): void {
+    const idx: number = key.indexOf("[");
+
+    if (idx === -1) {
+        if (BLOCKED_SEGMENTS.has(key)) return;
+
+        target[key] = value;
+
+        return;
+    }
+
+    const segments: Array<string> = [];
+    for (const match of key.slice(idx).matchAll(/\[([^\]]*)\]/g)) {
+        segments.push(match[1]);
+    }
+
+    const head: string = key.slice(0, idx);
+    if (BLOCKED_SEGMENTS.has(head)) return;
+
+    let cursor: any = target;
+    let cursorKey: string | number = head;
+
+    for (let i = 0; i < segments.length; i++) {
+        const segment: string = segments[i];
+        if (BLOCKED_SEGMENTS.has(segment)) return;
+
+        const isLast: boolean = i === segments.length - 1;
+
+        let child: any = cursor[cursorKey];
+
+        if (segment === "") {
+            if (!Array.isArray(child)) child = [];
+            cursor[cursorKey] = child;
+
+            if (isLast) {
+                child.push(value);
+
+                return;
+            }
+
+            child.push({});
+            cursor = child;
+            cursorKey = child.length - 1;
+
+            continue;
+        }
+
+        if (/^\d+$/.test(segment)) {
+            if (!Array.isArray(child)) child = [];
+            cursor[cursorKey] = child;
+
+            const index: number = parseInt(segment, 10);
+
+            if (isLast) {
+                child[index] = value;
+
+                return;
+            }
+
+            if (child[index] === undefined || child[index] === null) {
+                child[index] = {};
+            }
+
+            cursor = child;
+            cursorKey = index;
+
+            continue;
+        }
+
+        if (child === undefined || child === null) child = {};
+        cursor[cursorKey] = child;
+
+        if (isLast) {
+            child[segment] = value;
+
+            return;
+        }
+
+        cursor = child;
+        cursorKey = segment;
+    }
 }
 
 /**
@@ -214,7 +396,7 @@ export const RequestWrapper: Record<string, any> = {
      */
     has(this: Bejibun.Request, keys: string | Array<string>): boolean {
         return toArrayKeys(keys).every((key: string) => {
-            return Object.prototype.hasOwnProperty.call(this.payload, key);
+            return deepHas(this.payload, key);
         });
     },
 
@@ -226,7 +408,7 @@ export const RequestWrapper: Record<string, any> = {
      */
     hasAny(this: Bejibun.Request, keys: string | Array<string>): boolean {
         return toArrayKeys(keys).some((key: string) => {
-            return Object.prototype.hasOwnProperty.call(this.payload, key);
+            return deepHas(this.payload, key);
         });
     },
 
@@ -253,7 +435,7 @@ export const RequestWrapper: Record<string, any> = {
      */
     missing(this: Bejibun.Request, keys: string | Array<string>): boolean {
         return toArrayKeys(keys).every((key: string) => {
-            return !Object.prototype.hasOwnProperty.call(this.payload, key);
+            return !deepHas(this.payload, key);
         });
     },
 
@@ -332,11 +514,14 @@ export const RequestWrapper: Record<string, any> = {
     /**
      * Retrieves a raw value from the payload by key.
      *
-     * @param {string} key - The payload key.
+     * Supports flat keys, dot notation, and bracket notation for nested
+     * arrays/objects parsed from query/form strings.
+     *
+     * @param {string} key - The payload key (flat, dot, or bracket notation).
      * @returns {any} The raw value, or `undefined` when absent.
      */
     get(this: Bejibun.Request, key: string): any {
-        return this.payload?.[key];
+        return resolvePayload(this.payload, key);
     },
 
     /**
@@ -354,7 +539,11 @@ export const RequestWrapper: Record<string, any> = {
     /**
      * Retrieves a payload value coerced to an array.
      *
-     * @param {string} key - The payload key.
+     * Scalar values are wrapped in a single-element array and missing keys
+     * return an empty array. Especially handy for bracket-notation array
+     * query params on GET routes.
+     *
+     * @param {string} key - The payload key (flat, dot, or bracket notation).
      * @returns {Array<any>} The value as an array (single values wrapped).
      */
     array(this: Bejibun.Request, key: string): Array<any> {

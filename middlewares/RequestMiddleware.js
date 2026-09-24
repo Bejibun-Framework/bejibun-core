@@ -1,8 +1,19 @@
+import { deepSetPayload } from "../utils/request";
 /**
  * Middleware that parses the incoming request body/query/route params
- * into a single flat `request.payload` map, which every accessor attached
- * by `RouterBuilder.attachRequestHelpers()` (`get`, `input`, `all`,
+ * into a single `request.payload` map, which every accessor attached by
+ * `RouterBuilder.attachRequestHelpers()` (`get`, `input`, `all`,
  * `only`, `validate`, etc.) reads from.
+ *
+ * Query and form string pairs are unwrapped into nested structures using
+ * Laravel-style bracket notation: `origin_cities[0][id]=668` becomes
+ * `payload.origin_cities = [{ id: "668" }]`, and `items[]=a&items[]=b`
+ * becomes `payload.items = ["a", "b"]`. Prototype-ish segments
+ * (`__proto__`, `constructor`, `prototype`) are dropped to prevent global
+ * prototype pollution.
+ *
+ * Every accessor reads from `request.payload` via deep key resolution, so
+ * array query params work on GET routes without extra parsing.
  *
  * Applied globally in `server.ts` (ahead of the application's routes), so
  * every route handler can rely on `request.payload` being populated by
@@ -64,13 +75,13 @@ export default class RequestMiddleware {
             if (request.url.includes("?")) {
                 const url = new URL(request.url);
                 for (const [key, value] of url.searchParams) {
-                    payload[key] = value;
+                    deepSetPayload(payload, key, value);
                 }
             }
             if (isForm && hasBody) {
                 const body = await request.formData();
                 for (const [key, value] of body) {
-                    payload[key] = value;
+                    deepSetPayload(payload, key, value);
                 }
             }
             if (!isJson && !isForm && hasBody) {
