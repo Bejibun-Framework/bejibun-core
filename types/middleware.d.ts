@@ -1,4 +1,4 @@
-import type {HandlerType} from "./router";
+import type {HandlerType} from "./router.d.ts";
 
 /** A function that wraps a handler with additional behavior, returning a new handler. */
 export type MiddlewareType = (handler: HandlerType) => HandlerType;

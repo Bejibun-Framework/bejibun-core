@@ -1,4 +1,4 @@
-import CorsLoader from "../loader/CorsLoader";
+import CorsLoader from "../loader/CorsLoader.js";
 /**
  * Fluent builder for constructing HTTP responses. Wraps `data`,
  * `message`, `status`, and any custom top-level fields into a consistent

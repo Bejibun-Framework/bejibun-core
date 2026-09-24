@@ -1,5 +1,5 @@
 import Luxon from "@bejibun/utils/facades/Luxon";
-import JobModel from "../models/JobModel";
+import JobModel from "../models/JobModel.js";
 /**
  * Fluent builder for configuring and dispatching a queue job. Persists the
  * job as a row in `JobModel` (queue name, serialized arguments, and the

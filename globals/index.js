@@ -1,6 +1,6 @@
 import App from "@bejibun/app";
 import fs from "fs";
-import RuntimeException from "../exceptions/RuntimeException";
+import RuntimeException from "../exceptions/RuntimeException.js";
 /**
  * Side-effect-only import (via `bootstrap.ts`) that installs the `config()`
  * and `env()` global functions declared in `@/types/global.d.ts`.

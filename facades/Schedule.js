@@ -1,4 +1,4 @@
-import ScheduleBuilder from "../builders/ScheduleBuilder";
+import ScheduleBuilder from "../builders/ScheduleBuilder.js";
 /**
  * Static facade over `ScheduleBuilder`, used inside an application's
  * `Kernel.schedule()` method to register cron-driven Ace commands (e.g.

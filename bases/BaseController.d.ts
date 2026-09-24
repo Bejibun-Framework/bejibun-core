@@ -1,4 +1,4 @@
-import Response from "../facades/Response";
+import Response from "../facades/Response.js";
 /**
  * Base class every Bejibun controller extends. Provides shared conveniences
  * (a `Response` facade accessor and payload validation) so individual

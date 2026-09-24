@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.20](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.19...v0.6.20) - 2026-09-24
+
+### 🩹 Fixes
+- Hardened the command loader in `Kernel.registerCommands()`: each discovered command module is now `require()`d inside a `try/catch`, and only instances exposing both a `$signature` and a `handle()` method are registered. A broken, partially-initialised, or non-command module no longer takes the whole CLI down -- it is silently skipped
+
+### 📖 Changes
+- Compiled artifacts now emit relative imports with explicit `.js` extensions (via `tsc-alias` `^1.9.5`) -- no runtime impact under Bun, but output is now Node-ESM friendly
+
+### 📦 Dependencies
+
+- Bumped [`@bejibun/database`](https://github.com/Bejibun-Framework/bejibun-database) from `^0.1.24` to `^0.1.25`
+- Bumped `cron-parser` from `^5.10.0` to `^5.10.1`
+- Bumped `eslint` (devDependency) from `^10.10.0` to `^10.11.0`
+- Bumped `prettier` (devDependency) from `^3.9.6` to `^3.9.9`
+- Bumped `tsc-alias` (devDependency) from `^1.9.4` to `^1.9.5`
+- Bumped `typescript-eslint` (devDependency) from `^8.70.0` to `^8.70.1`
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.19](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.18...v0.6.19) - 2026-09-24
 
 ### 🩹 Fixes

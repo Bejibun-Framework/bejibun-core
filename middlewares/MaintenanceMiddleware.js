@@ -1,5 +1,5 @@
 import App from "@bejibun/app";
-import Response from "../facades/Response";
+import Response from "../facades/Response.js";
 /**
  * Middleware that short-circuits every request with the configured
  * maintenance message/status while the application is in maintenance

@@ -1,4 +1,4 @@
-import NamespaceBuilder from "../builders/NamespaceBuilder";
+import NamespaceBuilder from "../builders/NamespaceBuilder.js";
 /**
  * Thin static wrapper around `NamespaceBuilder`, used by `bootstrap.ts`
  * to autoload every job and model class under a given directory so they

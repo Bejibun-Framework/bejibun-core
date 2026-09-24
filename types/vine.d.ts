@@ -1,4 +1,4 @@
-import BaseModel from "../bases/BaseModel";
+import BaseModel from "../bases/BaseModel.js";
 
 /**
  * Options accepted by the framework's custom `exists`/`unique` Vine rules,

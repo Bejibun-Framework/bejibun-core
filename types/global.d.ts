@@ -1,5 +1,5 @@
-import type {ApiDocConfig} from "../decorators/ApiDocDecorator";
-import type {BejibunRequest} from "./request";
+import type {ApiDocConfig} from "../decorators/ApiDocDecorator.js";
+import type {BejibunRequest} from "./request.d.ts";
 import {SchemaTypes, VineValidator} from "@vinejs/vine";
 
 declare global {

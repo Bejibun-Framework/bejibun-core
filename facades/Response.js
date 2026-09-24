@@ -1,4 +1,4 @@
-import ResponseBuilder from "../builders/ResponseBuilder";
+import ResponseBuilder from "../builders/ResponseBuilder.js";
 /**
  * Static facade over `ResponseBuilder`, giving controllers a fluent
  * entry point for building HTTP responses (e.g.

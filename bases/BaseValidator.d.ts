@@ -1,5 +1,5 @@
 import vine from "@vinejs/vine";
-import "../utils/vine";
+import "../utils/vine.js";
 /**
  * Base class every Bejibun validator extends. Provides access to the
  * shared, pre-configured Vine instance (with the framework's custom

@@ -1,12 +1,12 @@
 import App from "@bejibun/app";
 import Logger from "@bejibun/logger";
-import RuntimeException from "./exceptions/RuntimeException";
-import Router from "./facades/Router";
-import MaintenanceMiddleware from "./middlewares/MaintenanceMiddleware";
-import RateLimiterMiddleware from "./middlewares/RateLimiterMiddleware";
-import RequestMiddleware from "./middlewares/RequestMiddleware";
-import BaseWebSocket from "./bases/BaseWebSocket";
-import WebSocketLoader from "./loader/WebSocketLoader";
+import RuntimeException from "./exceptions/RuntimeException.js";
+import Router from "./facades/Router.js";
+import MaintenanceMiddleware from "./middlewares/MaintenanceMiddleware.js";
+import RateLimiterMiddleware from "./middlewares/RateLimiterMiddleware.js";
+import RequestMiddleware from "./middlewares/RequestMiddleware.js";
+import BaseWebSocket from "./bases/BaseWebSocket.js";
+import WebSocketLoader from "./loader/WebSocketLoader.js";
 // Boot the application (DB, decorators, websockets, namespaces, CORS)
 // before building the server.
 await import(App.Path.rootPath("bootstrap.ts"));
@@ -94,7 +94,7 @@ export default class Server {
             config = require(App.Path.configPath("performance.ts")).default;
         }
         catch {
-            config = require("./config/performance").default;
+            config = require("./config/performance.js").default;
         }
         return config;
     }
@@ -111,7 +111,7 @@ export default class Server {
             config = require(App.Path.configPath("route.ts")).default;
         }
         catch {
-            config = require("./config/route").default;
+            config = require("./config/route.js").default;
         }
         return config;
     }
@@ -128,7 +128,7 @@ export default class Server {
             config = require(App.Path.configPath("websocket.ts")).default;
         }
         catch {
-            config = require("./config/websocket").default;
+            config = require("./config/websocket.js").default;
         }
         return config;
     }

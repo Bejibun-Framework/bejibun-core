@@ -1,4 +1,4 @@
-import { deepSetPayload } from "../utils/request";
+import { deepSetPayload } from "../utils/request.js";
 /**
  * Middleware that parses the incoming request body/query/route params
  * into a single `request.payload` map, which every accessor attached by

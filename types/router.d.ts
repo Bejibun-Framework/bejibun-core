@@ -1,5 +1,5 @@
-import type {ApiDocConfig} from "../decorators/ApiDocDecorator";
-import type {IMiddleware} from "./middleware";
+import type {ApiDocConfig} from "../decorators/ApiDocDecorator.js";
+import type {IMiddleware} from "./middleware.d.ts";
 
 /** A resolved route handler function, as ultimately registered with Bun's router. */
 export type HandlerType = (request: Bejibun.Request, server: Bun.Server<any>) => Promise<Response>;

@@ -1,10 +1,10 @@
 import App from "@bejibun/app";
 import Logger from "@bejibun/logger";
 import Luxon from "@bejibun/utils/facades/Luxon";
-import QueueConfig from "../../config/queue";
-import QueueException from "../../exceptions/QueueException";
-import RuntimeException from "../../exceptions/RuntimeException";
-import JobModel from "../../models/JobModel";
+import QueueConfig from "../../config/queue.js";
+import QueueException from "../../exceptions/QueueException.js";
+import RuntimeException from "../../exceptions/RuntimeException.js";
+import JobModel from "../../models/JobModel.js";
 import fs from "fs";
 /**
  * Console command: `Start processing jobs on the queue as a daemon`

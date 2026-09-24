@@ -1,11 +1,11 @@
 import App from "@bejibun/app";
 import Cors from "@bejibun/cors";
 import Database from "@bejibun/database";
-import BaseModel from "./bases/BaseModel";
-import "./globals/index";
-import Kernel from "./Kernel";
-import NamespaceLoader from "./loader/NamespaceLoader";
-import CorsLoader from "./loader/CorsLoader";
+import BaseModel from "./bases/BaseModel.js";
+import "./globals/index.js";
+import Kernel from "./Kernel.js";
+import NamespaceLoader from "./loader/NamespaceLoader.js";
+import CorsLoader from "./loader/CorsLoader.js";
 /**
  * Application bootstrap script, imported once by both `server.ts` and
  * `ace.ts` before anything else runs. Wires up the pieces every entry

@@ -1,10 +1,10 @@
 import type { TFacilitator, TRoutePayment } from "@bejibun/x402/types";
-import type { ApiDocConfig } from "../decorators/ApiDocDecorator";
-import type { IMiddleware } from "../types/middleware";
-import type { HandlerType, RawsRoute, ResourceOptions, Route, RouterGroup } from "../types/router";
+import type { ApiDocConfig } from "../decorators/ApiDocDecorator.js";
+import type { IMiddleware } from "../types/middleware.d.ts";
+import type { HandlerType, RawsRoute, ResourceOptions, Route, RouterGroup } from "../types/router.d.ts";
 import HttpMethodEnum from "@bejibun/utils/enums/HttpMethodEnum";
 import "reflect-metadata";
-import BaseController from "../bases/BaseController";
+import BaseController from "../bases/BaseController.js";
 /**
  * Fluent builder for defining, grouping, and compiling application routes.
  *

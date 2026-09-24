@@ -3,14 +3,14 @@
  * framework - global ambient declarations, middleware, request, router,
  * schedule, validator, and the Vine module augmentation.
  */
-export * from "./global";
+export * from "./global.d.ts";
 
-export * from "./middleware";
+export * from "./middleware.d.ts";
 
-export * from "./request";
+export * from "./request.d.ts";
 
-export * from "./router";
+export * from "./router.d.ts";
 
-export * from "./schedule";
+export * from "./schedule.d.ts";
 
-export * from "./vine";
+export * from "./vine.d.ts";

@@ -1,4 +1,4 @@
-import ScheduleLoader from "../loader/ScheduleLoader";
+import ScheduleLoader from "../loader/ScheduleLoader.js";
 /**
  * Fluent builder for scheduling recurring commands. Supports
  * six-field cron expression (`second minute hour day month weekday`) and

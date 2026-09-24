@@ -1,5 +1,5 @@
 import { errors } from "@vinejs/vine";
-import ValidatorException from "../exceptions/ValidatorException";
+import ValidatorException from "../exceptions/ValidatorException.js";
 /**
  * Runs a Vine validator against the given body, normalizing any
  * validation failure into a `ValidatorException`.

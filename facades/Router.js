@@ -1,4 +1,4 @@
-import RouterBuilder from "../builders/RouterBuilder";
+import RouterBuilder from "../builders/RouterBuilder.js";
 /**
  * Static facade over `RouterBuilder`. Every method here creates a fresh
  * `RouterBuilder` instance and immediately forwards to the matching

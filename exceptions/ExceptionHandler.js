@@ -3,12 +3,12 @@ import RateLimiterException from "@bejibun/limiter/exceptions/RateLimiterExcepti
 import Logger from "@bejibun/logger";
 import HttpMethodEnum from "@bejibun/utils/enums/HttpMethodEnum";
 import { ValidationError } from "objection";
-import ModelNotFoundException from "./ModelNotFoundException";
-import QueueException from "./QueueException";
-import RouterException from "./RouterException";
-import RuntimeException from "./RuntimeException";
-import ValidatorException from "./ValidatorException";
-import Response from "../facades/Response";
+import ModelNotFoundException from "./ModelNotFoundException.js";
+import QueueException from "./QueueException.js";
+import RouterException from "./RouterException.js";
+import RuntimeException from "./RuntimeException.js";
+import ValidatorException from "./ValidatorException.js";
+import Response from "../facades/Response.js";
 /**
  * Central exception-to-response translator. Converts thrown errors into
  * consistent JSON error responses (message + status code), and serves

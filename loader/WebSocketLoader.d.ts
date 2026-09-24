@@ -1,4 +1,4 @@
-import BaseWebSocket from "../bases/BaseWebSocket";
+import BaseWebSocket from "../bases/BaseWebSocket.js";
 /**
  * Registry of discovered WebSocket handler classes, populated by
  * `Kernel.registerWebSockets()` and consumed by `server.ts` to dispatch

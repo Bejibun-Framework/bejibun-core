@@ -1,4 +1,4 @@
-import type { TSchedule } from "../types/schedule";
+import type { TSchedule } from "../types/schedule.d.ts";
 /**
  * Registry of scheduled (cron-driven) tasks, populated by
  * `ScheduleBuilder` as an application's `Kernel.schedule()` runs, and

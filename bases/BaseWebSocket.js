@@ -1,4 +1,4 @@
-import RuntimeException from "../exceptions/RuntimeException";
+import RuntimeException from "../exceptions/RuntimeException.js";
 /**
  * Base class every Bejibun WebSocket handler extends. Tracks connected
  * clients per registered `path` and provides broadcast helpers, so

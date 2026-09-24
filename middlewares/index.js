@@ -4,6 +4,6 @@
  * `RequestMiddleware` is intentionally excluded - it's applied internally
  * by `server.ts` rather than being part of the public middleware set.
  */
-export { default as MaintenanceMiddleware } from "./MaintenanceMiddleware";
-export { default as RateLimiterMiddleware } from "./RateLimiterMiddleware";
-export { default as X402Middleware } from "./X402Middleware";
+export { default as MaintenanceMiddleware } from "./MaintenanceMiddleware.js";
+export { default as RateLimiterMiddleware } from "./RateLimiterMiddleware.js";
+export { default as X402Middleware } from "./X402Middleware.js";

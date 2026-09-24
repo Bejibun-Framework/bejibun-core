@@ -1,6 +1,6 @@
 import Luxon from "@bejibun/utils/facades/Luxon";
 import { Model, ModelClass, PartialModelObject, QueryBuilder, QueryBuilderType, TransactionOrKnex } from "objection";
-import SoftDeletes from "../facades/SoftDeletes";
+import SoftDeletes from "../facades/SoftDeletes.js";
 /** Acceptable representations of a point in time for model timestamp columns. */
 export type Timestamp = typeof Luxon.DateTime | Date | string;
 /** A timestamp value that may be absent. */

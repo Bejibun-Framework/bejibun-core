@@ -1,5 +1,5 @@
 import Logger from "@bejibun/logger";
-import JobModel from "../../models/JobModel";
+import JobModel from "../../models/JobModel.js";
 /**
  * Console command: `Flush all of the failed queue jobs`
  *

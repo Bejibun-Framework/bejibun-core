@@ -74,13 +74,17 @@ export default class Kernel {
         const instances: Array<any> = [];
 
         for (const file of files) {
-            const {default: CommandClass} = require(file);
+            try {
+                const {default: CommandClass} = require(file);
 
-            const instance = new CommandClass();
+                const instance = new CommandClass();
 
-            if (!instance.$signature || typeof instance.handle !== "function") continue;
+                if (!instance.$signature || typeof instance.handle !== "function") continue;
 
-            instances.push(instance);
+                instances.push(instance);
+            } catch {
+                // do nothing
+            }
         }
 
         for (const instance of instances.sort((a, b) => a.$signature.localeCompare(b.$signature))) {

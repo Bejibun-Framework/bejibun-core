@@ -1,4 +1,4 @@
-import JobBuilder from "../builders/JobBuilder";
+import JobBuilder from "../builders/JobBuilder.js";
 /**
  * Base class every Bejibun queue job extends. Provides namespace
  * registration and a static `dispatch()` shortcut for pushing the

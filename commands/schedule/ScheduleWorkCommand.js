@@ -2,8 +2,8 @@ import App from "@bejibun/app";
 import Logger from "@bejibun/logger";
 import Luxon from "@bejibun/utils/facades/Luxon";
 import CronExpressionParser from "cron-parser";
-import Kernel from "../../Kernel";
-import ScheduleLoader from "../../loader/ScheduleLoader";
+import Kernel from "../../Kernel.js";
+import ScheduleLoader from "../../loader/ScheduleLoader.js";
 /**
  * Console command: `Start the schedule worker`
  *

@@ -1,9 +1,9 @@
 import App from "@bejibun/app";
 import path from "path";
-import BaseModel from "./bases/BaseModel";
-import RuntimeException from "./exceptions/RuntimeException";
-import Schedule from "./facades/Schedule";
-import WebSocketLoader from "./loader/WebSocketLoader";
+import BaseModel from "./bases/BaseModel.js";
+import RuntimeException from "./exceptions/RuntimeException.js";
+import Schedule from "./facades/Schedule.js";
+import WebSocketLoader from "./loader/WebSocketLoader.js";
 /**
  * Framework bootstrap kernel. Provides the static registration routines
  * invoked during application startup to wire up the Commander CLI,
@@ -59,11 +59,16 @@ export default class Kernel {
             !value.includes("Kernel"));
         const instances = [];
         for (const file of files) {
-            const { default: CommandClass } = require(file);
-            const instance = new CommandClass();
-            if (!instance.$signature || typeof instance.handle !== "function")
-                continue;
-            instances.push(instance);
+            try {
+                const { default: CommandClass } = require(file);
+                const instance = new CommandClass();
+                if (!instance.$signature || typeof instance.handle !== "function")
+                    continue;
+                instances.push(instance);
+            }
+            catch {
+                // do nothing
+            }
         }
         for (const instance of instances.sort((a, b) => a.$signature.localeCompare(b.$signature))) {
             const cmd = program

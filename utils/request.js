@@ -9,7 +9,7 @@
  * The `server` that dispatched the request is registered per request in the
  * `REQUEST_SERVERS` WeakMap (only `ip()` needs it), so helpers stay closure-free.
  */
-import { validatePayload } from "./validate";
+import { validatePayload } from "./validate.js";
 /**
  * Associates each incoming request with the Bun server that dispatched it,
  * so `ip()` can resolve the client address without a per-request closure.

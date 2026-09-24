@@ -4,5 +4,5 @@
  * Imported once by `BaseValidator` so every validator gets the extended
  * rule set automatically.
  */
-import "./vines/exists";
-import "./vines/unique";
+import "./vines/exists.js";
+import "./vines/unique.js";

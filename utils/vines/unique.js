@@ -1,5 +1,5 @@
 import vine, { VineNumber, VineString } from "@vinejs/vine";
-import BaseModel from "../../bases/BaseModel";
+import BaseModel from "../../bases/BaseModel.js";
 /**
  * Async Vine rule implementation backing `.unique()`: fails validation if
  * a matching row already exists in the configured table/column.

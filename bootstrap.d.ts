@@ -1,1 +1,1 @@
-import "./globals/index";
+import "./globals/index.js";

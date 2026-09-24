@@ -4,9 +4,9 @@ import { defineValue, isEmpty, isModuleExists, isNotEmpty } from "@bejibun/utils
 import HttpMethodEnum from "@bejibun/utils/enums/HttpMethodEnum";
 import Enum from "@bejibun/utils/facades/Enum";
 import "reflect-metadata";
-import { ApiDocDecoratorKey } from "../decorators/ApiDocDecorator";
-import RouterException from "../exceptions/RouterException";
-import { RequestServers, RequestWrapper } from "../utils/request";
+import { ApiDocDecoratorKey } from "../decorators/ApiDocDecorator.js";
+import RouterException from "../exceptions/RouterException.js";
+import { RequestServers, RequestWrapper } from "../utils/request.js";
 /**
  * Fluent builder for defining, grouping, and compiling application routes.
  *
@@ -81,7 +81,7 @@ export default class RouterBuilder {
     x402(facilitator, routePayment) {
         if (!isModuleExists("@bejibun/x402"))
             throw new RouterException("@bejibun/x402 is not installed.");
-        const X402Middleware = require("../middlewares/X402Middleware").default;
+        const X402Middleware = require("../middlewares/X402Middleware.js").default;
         this.middlewares.push(new X402Middleware(facilitator, routePayment));
         return this;
     }

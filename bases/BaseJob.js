@@ -1,5 +1,5 @@
-import JobBuilder from "../builders/JobBuilder";
-import RuntimeException from "../exceptions/RuntimeException";
+import JobBuilder from "../builders/JobBuilder.js";
+import RuntimeException from "../exceptions/RuntimeException.js";
 /**
  * Base class every Bejibun queue job extends. Provides namespace
  * registration and a static `dispatch()` shortcut for pushing the

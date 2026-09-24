@@ -1,5 +1,5 @@
-import QueueDriverEnum from "../enums/QueueDriverEnum";
-import JobModel from "../models/JobModel";
+import QueueDriverEnum from "../enums/QueueDriverEnum.js";
+import JobModel from "../models/JobModel.js";
 /**
  * Default queue configuration. Defines the active connection (via the
  * `QUEUE_DRIVER` env var, defaulting to `"database"`) and the settings

@@ -2,7 +2,7 @@ import App from "@bejibun/app";
 import Str from "@bejibun/utils/facades/Str";
 import { program } from "commander";
 import os from "os";
-import Kernel from "./Kernel";
+import Kernel from "./Kernel.js";
 import { version } from "package.json";
 // Entry point for the `bun ace <command>` CLI, invoked directly by the
 // `ace` binary. Boots the application's bootstrap.ts first (so DB, cors,

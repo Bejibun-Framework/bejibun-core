@@ -8,9 +8,9 @@
  * the framework (typically via `@/...` path aliases) rather than being
  * part of the package's public API.
  */
-export * from "./bases/index";
-export * from "./enums/index";
-export * from "./exceptions/index";
-export * from "./facades/index";
-export * from "./middlewares/index";
-export * from "./models/index";
+export * from "./bases/index.js";
+export * from "./enums/index.js";
+export * from "./exceptions/index.js";
+export * from "./facades/index.js";
+export * from "./middlewares/index.js";
+export * from "./models/index.js";

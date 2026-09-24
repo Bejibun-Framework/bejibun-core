@@ -1,8 +1,8 @@
 import App from "@bejibun/app";
 import Logger from "@bejibun/logger";
 import Luxon from "@bejibun/utils/facades/Luxon";
-import RuntimeException from "../../exceptions/RuntimeException";
-import JobModel from "../../models/JobModel";
+import RuntimeException from "../../exceptions/RuntimeException.js";
+import JobModel from "../../models/JobModel.js";
 /**
  * Console command: `Retry a failed queue job`
  *

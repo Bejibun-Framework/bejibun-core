@@ -1,4 +1,4 @@
-import BaseModel from "../bases/BaseModel";
+import BaseModel from "../bases/BaseModel.js";
 /**
  * Mixin that overrides `BaseModel`'s default `$beforeInsert`/`$beforeUpdate`
  * timestamp hooks to stamp `createdColumn`/`updatedColumn` with Unix

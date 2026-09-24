@@ -1,8 +1,8 @@
 import Luxon from "@bejibun/utils/facades/Luxon";
 import { Model } from "objection";
-import ModelNotFoundException from "../exceptions/ModelNotFoundException";
-import SoftDeletes from "../facades/SoftDeletes";
-import RuntimeException from "../exceptions/RuntimeException";
+import ModelNotFoundException from "../exceptions/ModelNotFoundException.js";
+import SoftDeletes from "../facades/SoftDeletes.js";
+import RuntimeException from "../exceptions/RuntimeException.js";
 /**
  * Internal query builder used by `BaseModel`. Extends the soft-deletes
  * builder so every model gets soft-delete-aware querying, and overrides
