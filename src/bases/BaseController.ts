@@ -6,19 +6,19 @@ import Response from "@/facades/Response";
 
 export default class BaseController {
     public async parse(request: Bun.BunRequest): Promise<Record<string, any>> {
-        const contentType: string = defineValue(request.headers.get("content-type"), "");
+        const contentType: string = defineValue(request?.headers?.get("content-type"), "");
         const formData: FormData = new FormData();
 
         let data: Record<string, any> = {};
 
         try {
-            if (contentType.includes("application/json")) Object.assign(data, Bobject.serialize(await request.json()));
+            if (contentType.includes("application/json")) Object.assign(data, Bobject.serialize(defineValue(await request?.json(), {})));
 
-            for (const [key, value] of Object.entries(request.params)) {
+            for (const [key, value] of Object.entries(defineValue(request?.params, {}))) {
                 formData.append(key, value as string);
             }
 
-            const url = new URL(request.url);
+            const url = new URL(defineValue(request?.url, ""));
             for (const [key, value] of url.searchParams) {
                 formData.append(key, value);
             }
@@ -27,14 +27,14 @@ export default class BaseController {
                 contentType.includes("multipart/form-data") ||
                 contentType.includes("application/x-www-form-urlencoded")
             ) {
-                const body = await request.formData();
+                const body = defineValue(await request?.formData(), {});
 
                 for (const [key, value] of body) {
                     formData.append(key, value);
                 }
             }
 
-            const text = await request.text();
+            const text = defineValue(await request?.text(), "");
             if (isNotEmpty(text)) formData.append("text", text);
         } catch {
             // do nothing
