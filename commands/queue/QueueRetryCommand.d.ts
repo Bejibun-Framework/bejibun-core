@@ -33,10 +33,14 @@ export default class QueueRetryCommand {
      * Executes this command.
      *
      * Loops through failed jobs (attempts >= 3 and unreserved), re-claims
-     * and re-runs each one, deleting it on success or bumping `attempts` and
-     * releasing the reservation on failure. Stops when no eligible jobs
-     * remain or when a stop signal (`SIGINT`/`SIGTERM`/`exit`) arrives after
-     * the in-flight job, mirroring the `queue:work` shutdown contract.
+     * each one via `SELECT ... FOR UPDATE SKIP LOCKED` inside a transaction
+     * and re-runs it, deleting on success or bumping `attempts` on failure --
+     * the row lock guarantees one retry worker at a time. Stops when no
+     * eligible jobs remain or when a stop signal (`SIGINT`/`SIGTERM`/`exit`)
+     * arrives after the in-flight job, mirroring the `queue:work` shutdown
+     * contract.
+     *
+     * @returns {Promise<void>}
      */
     handle(): Promise<void>;
 }

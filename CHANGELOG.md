@@ -3,9 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v0.6.23](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.23) - 2026-09-25
+## [v0.6.24](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.24) - 2026-09-25
 
 ### 🩹 Fixes
+- `queue:work --timeout <seconds>` option (default `retry_after`): a separate watchdog process (spawned with the same runtime -- no shell dependency, works on Windows) SIGTERMs then SIGKILLs a worker whose job overruns the timeout, so a wedged worker is freed by the OS and its row lock is released for crash-style recovery
 - `queue:work` no longer double-executes jobs under concurrency:
   - the worker heartbeats `reserved_at` every `retry_after / 2` while a job's `handle()` is running, so a long-running job is never re-claimed by another worker from the in-flight copy (only a dead worker stops beating and lets the reservation age out)
   - jobs gated on `available_at <= now` on both the select and the atomic claim, so delayed (`delay()`) jobs are not picked up early
