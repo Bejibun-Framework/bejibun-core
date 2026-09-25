@@ -32,13 +32,18 @@ export default class QueueRetryCommand {
     /**
      * Executes this command.
      *
-     * Loops through failed jobs (attempts >= 3 and unreserved), re-claims
-     * each one via `SELECT ... FOR UPDATE SKIP LOCKED` inside a transaction
-     * and re-runs it, deleting on success or bumping `attempts` on failure --
-     * the row lock guarantees one retry worker at a time. Stops when no
-     * eligible jobs remain or when a stop signal (`SIGINT`/`SIGTERM`/`exit`)
-     * arrives after the in-flight job, mirroring the `queue:work` shutdown
-     * contract.
+     * Loops through failed jobs (attempts >= 3 and unreserved), re-claims each one via
+     * `JobModel.claim()` -- a portable, optimistic-locking claim that works unmodified
+     * against any database Knex/Objection support -- and re-runs it, deleting on success or
+     * bumping `attempts` on failure. The claim is a momentary `UPDATE ... WHERE`, not a
+     * transaction (or a database-specific row lock) held open for the whole retry --
+     * `reserved_at` is what actually keeps two concurrent `queue:retry` runs from picking up
+     * the same row, which is what makes this safe behind a transaction-mode connection
+     * pooler that wouldn't tolerate a transaction held open across
+     * an arbitrarily long job. See `QueueWorkCommand`/`JobModel.claim()` for why this needs
+     * no `FOR UPDATE`/`SKIP LOCKED`/`RETURNING`. Stops when no eligible jobs remain or when a
+     * stop signal (`SIGINT`/`SIGTERM`/`exit`) arrives after the in-flight job, mirroring the
+     * `queue:work` shutdown contract.
      *
      * @returns {Promise<void>}
      */

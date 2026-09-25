@@ -37,13 +37,18 @@ export default class QueueRetryCommand {
     /**
      * Executes this command.
      *
-     * Loops through failed jobs (attempts >= 3 and unreserved), re-claims
-     * each one via `SELECT ... FOR UPDATE SKIP LOCKED` inside a transaction
-     * and re-runs it, deleting on success or bumping `attempts` on failure --
-     * the row lock guarantees one retry worker at a time. Stops when no
-     * eligible jobs remain or when a stop signal (`SIGINT`/`SIGTERM`/`exit`)
-     * arrives after the in-flight job, mirroring the `queue:work` shutdown
-     * contract.
+     * Loops through failed jobs (attempts >= 3 and unreserved), re-claims each one via
+     * `JobModel.claim()` -- a portable, optimistic-locking claim that works unmodified
+     * against any database Knex/Objection support -- and re-runs it, deleting on success or
+     * bumping `attempts` on failure. The claim is a momentary `UPDATE ... WHERE`, not a
+     * transaction (or a database-specific row lock) held open for the whole retry --
+     * `reserved_at` is what actually keeps two concurrent `queue:retry` runs from picking up
+     * the same row, which is what makes this safe behind a transaction-mode connection
+     * pooler that wouldn't tolerate a transaction held open across
+     * an arbitrarily long job. See `QueueWorkCommand`/`JobModel.claim()` for why this needs
+     * no `FOR UPDATE`/`SKIP LOCKED`/`RETURNING`. Stops when no eligible jobs remain or when a
+     * stop signal (`SIGINT`/`SIGTERM`/`exit`) arrives after the in-flight job, mirroring the
+     * `queue:work` shutdown contract.
      *
      * @returns {Promise<void>}
      */
@@ -57,52 +62,34 @@ export default class QueueRetryCommand {
         process.on("SIGINT", () => stop("SIGINT"));
         process.on("SIGTERM", () => stop("SIGTERM"));
         while (running) {
-            const outcome = await JobModel.transaction(async (trx) => {
-                const claimNow = Luxon.DateTime.now().toUnixInteger();
-                /**
-                 * Claim a dead-lettered job via row lock; other retry workers
-                 * SKIP rows locked by this transaction.
-                 */
-                const job = await JobModel.query(trx)
-                    .where("attempts", ">=", 3)
-                    .where("available_at", "<=", claimNow)
-                    .whereNull("reserved_at")
-                    .orderBy("id", "asc")
-                    .forUpdate()
-                    .skipLocked()
-                    .first();
-                if (!job?.id)
-                    return "idle";
-                await JobModel.query(trx).findById(job.id).patch({
-                    reserved_at: claimNow
-                });
-                const handler = async () => {
-                    const module = await import(App.Path.rootPath(job.queue));
-                    const Class = module.default;
-                    if (!Class)
-                        throw new RuntimeException(`Job class not found [${job.queue}].`);
-                    const instance = new Class();
-                    if (typeof instance.handle !== "function")
-                        throw new RuntimeException(`Job class has no handle function in [${job.queue}].`);
-                    await instance.handle(Bun.JSON5.parse(job.payload));
-                };
-                try {
-                    await handler();
-                    await JobModel.query(trx).findById(job.id).delete();
-                    return "ok";
-                }
-                catch {
-                    await JobModel.query(trx)
-                        .findById(job.id)
-                        .increment("attempts", 1)
-                        .patch({ reserved_at: null });
-                    return "failed";
-                }
-            });
-            if (outcome === "idle") {
-                running = false;
+            const claimNow = Luxon.DateTime.now().toUnixInteger();
+            /**
+             * Portable, database-agnostic claim -- see `JobModel.claim()` and
+             * `QueueWorkCommand` for why this needs no `FOR UPDATE`/`SKIP LOCKED`/`RETURNING`.
+             */
+            const job = await JobModel.claim((builder) => builder
+                .where("attempts", ">=", 3)
+                .where("available_at", "<=", claimNow)
+                .whereNull("reserved_at"), claimNow);
+            if (!job?.id)
+                break;
+            const handler = async () => {
+                const module = await import(App.Path.rootPath(job.queue));
+                const Class = module.default;
+                if (!Class)
+                    throw new RuntimeException(`Job class not found [${job.queue}].`);
+                const instance = new Class();
+                if (typeof instance.handle !== "function")
+                    throw new RuntimeException(`Job class has no handle function in [${job.queue}].`);
+                await instance.handle(Bun.JSON5.parse(job.payload));
+            };
+            try {
+                await handler();
+                await JobModel.query().findById(job.id).delete();
             }
-            else if (outcome === "failed") {
+            catch {
+                await JobModel.query().findById(job.id).increment("attempts", 1);
+                await JobModel.query().findById(job.id).patch({ reserved_at: null });
                 // The failed retry stays eligible; loop again.
             }
         }

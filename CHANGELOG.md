@@ -3,17 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v0.6.24](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.24) - 2026-09-25
+## [v0.6.26](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.26) - 2026-09-25
 
 ### 🩹 Fixes
-- `queue:work --timeout <seconds>` option (default `retry_after`): a separate watchdog process (spawned with the same runtime -- no shell dependency, works on Windows) SIGTERMs then SIGKILLs a worker whose job overruns the timeout, so a wedged worker is freed by the OS and its row lock is released for crash-style recovery
-- `queue:work` no longer double-executes jobs under concurrency:
-  - the worker heartbeats `reserved_at` every `retry_after / 2` while a job's `handle()` is running, so a long-running job is never re-claimed by another worker from the in-flight copy (only a dead worker stops beating and lets the reservation age out)
-  - jobs gated on `available_at <= now` on both the select and the atomic claim, so delayed (`delay()`) jobs are not picked up early
-  - the failure path bumps `attempts` atomically (`attempts + 1`) instead of from a stale read
-- `queue:retry` aligns with the same `available_at` gate and atomic attempt bump
+- `queue:work`'s heartbeat failures are now logged instead of being silently swallowed -- a heartbeat that can't refresh `reserved_at` (e.g. a connection dropped or recycled mid-job by a transaction-mode connection pooler) is the most likely real-world cause of an in-flight job losing its reservation and being double-claimed by another worker, so it's now visible in the logs instead of invisible
 
 ### 📖 Changes
+- `queue:work` and `queue:retry` job claiming rewritten to be fully database-agnostic: the new `JobModel.claim()` replaces the previous `SELECT ... FOR UPDATE SKIP LOCKED ... RETURNING *` raw SQL with a portable, optimistic (compare-and-swap) `UPDATE ... WHERE` claim -- the same code now runs unmodified against Postgres, MySQL, SQLite, MSSQL, or any other database Knex/Objection support, with no dependency on any single engine's row-locking syntax. On a lost claim race it retries against the next-oldest eligible job instead of waiting out a full `poll_interval`
+- `--timeout` (introduced in v0.6.24 alongside the heartbeat/reservation mechanism, with independent `retry_after`/`poll_interval`/`retry_delay` knobs from v0.6.21) is now clamped to never exceed `retry_after` instead of only documenting the requirement -- a `--timeout` larger than `retry_after` could let a job's reservation go stale and be reclaimed by another worker while it's still in-flight; an oversized value is now logged as a warning and capped to `retry_after`
 
 ### 📦 Dependencies
 

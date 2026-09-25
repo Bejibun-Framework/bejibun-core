@@ -53,16 +53,30 @@ export default class QueueWorkCommand {
      * (falling back to the package default if the app hasn't published its own), then loops indefinitely,
      * claiming the oldest eligible job
      * (attempts < 3, and either never reserved or whose reservation is older than `retry_after` seconds --
-     * i.e. presumed abandoned by a crashed worker) via `SELECT ... FOR UPDATE SKIP LOCKED` inside a transaction,
-     * running its handler (holding the row lock until success, failure, or crash --
-     * Postgres SKIPs locked rows for every other worker, so one job is delivered to exactly one worker),
-     * and deleting it on success or incrementing `attempts` and releasing the reservation on failure,
-     * all within the same transaction.
+     * i.e. presumed abandoned by a crashed worker) via `JobModel.claim()` -- a portable,
+     * optimistic-locking claim that works unmodified against any database Knex/Objection
+     * support (Postgres, MySQL, SQLite, MSSQL, ...), running its handler, and deleting it on
+     * success or incrementing `attempts` and releasing the reservation on failure.
+     *
+     * The claim is intentionally a plain, momentary `UPDATE ... WHERE` rather than a
+     * transaction (or a database-specific row lock) held open for the whole job: the database
+     * only needs to serialize that one write, so `reserved_at` -- kept fresh by a heartbeat
+     * while the handler runs -- is what actually protects an in-flight job from being
+     * reclaimed, not a held lock. This matters behind a transaction-mode connection pooler:
+     * those poolers are built for
+     * many short transactions, not for one held open across an arbitrarily long job, and can
+     * cut a long-lived transaction (or route it oddly) well before the job finishes -- silently
+     * releasing any row lock it held and letting another worker claim the exact same row while
+     * the first one is still mid-`handle()`. A time-based reservation plus a hard `--timeout`
+     * watchdog has no such assumption baked in; it works the same whether the connection goes
+     * straight to the database or through any pooler in front of it, and the same whether that
+     * database is Postgres, MySQL, SQLite, or anything else Knex speaks.
+     *
      * Idles for `poll_interval` seconds when nothing is claimable and waits `retry_delay` seconds
      * before retrying after a failed attempt - three independent knobs,
      * separate from the reservation timeout.
      * An external watchdog process (see `--timeout`) SIGTERMs then SIGKILLs a worker whose job overruns the timeout,
-     * freeing its lock for crash-style recovery.
+     * so a wedged job can never outlive `retry_after` and end up processed twice.
      * Listens for `exit`/`SIGINT`/`SIGTERM` to stop the loop gracefully after the current iteration.
      * A stop signal resolves the interruptible sleep immediately,
      * so a long `retry_after` never delays shutdown -- the worker finishes the in-flight job (if any) and exits.
@@ -91,9 +105,20 @@ export default class QueueWorkCommand {
         /**
          * `--timeout`: if a job overruns this, the worker is killed by an external
          * watchdog process (TERM first, SIGKILL after a grace) so it can never double-run the job
-         * after being reclaimed by another worker. Defaults to `retry_after`.
+         * after being reclaimed by another worker. Defaults to `retry_after`, and is clamped to
+         * never exceed it -- a `--timeout` larger than `retry_after` would let a job's
+         * reservation go stale and get reclaimed by another worker while this one is still
+         * mid-handle, which is exactly the double-execution failure mode this whole mechanism
+         * exists to prevent, so this is enforced rather than just documented.
          */
-        const timeoutSec: number = Number(options?.timeout) || retryAfter;
+        const requestedTimeout: number = Number(options?.timeout) || retryAfter;
+        const timeoutSec: number = Math.min(requestedTimeout, retryAfter);
+
+        if (requestedTimeout > retryAfter) {
+            Logger.setContext("Queue").warn(
+                `--timeout (${requestedTimeout}s) exceeds retry_after (${retryAfter}s); clamping to ${timeoutSec}s to prevent double-execution.`
+            );
+        }
 
         let running: boolean = true;
         let resolveStop: (() => void) | null = null;
@@ -160,7 +185,7 @@ export default class QueueWorkCommand {
          */
         type Watchdog = ReturnType<typeof Bun.spawn>;
 
-        const WATCHDOG_SCRIPT: string = `
+        const WatchdogScript: string = `
             const pid: number = Number(process.env.WATCHDOG_PID);
             const ms: number = Number(process.env.WATCHDOG_MS);
 
@@ -178,7 +203,7 @@ export default class QueueWorkCommand {
         `;
 
         const spawnWatchdog = (pid: number, ms: number): Watchdog =>
-            Bun.spawn([process.execPath, "-e", WATCHDOG_SCRIPT], {
+            Bun.spawn([process.execPath, "-e", WatchdogScript], {
                 stdout: "ignore",
                 stderr: "ignore",
                 stdin: "ignore",
@@ -202,149 +227,156 @@ export default class QueueWorkCommand {
         Logger.setContext("Queue").info("Queue worker started.");
 
         while (running) {
-            /**
-             * Claim and process each job inside ONE transaction.
-             * The claim is `SELECT ... FOR UPDATE SKIP LOCKED`: Postgres locks exactly one eligible row under
-             * this worker's transaction and every other worker SKIPs all locked rows,
-             * so a job is handed to exactly one worker at a time -- broker-style delivery, with
-             * the database itself enforcing "1 worker, 1 job".
-             * The lock is held for the whole `handle()` run, and released only by this worker's
-             * terminal write (COMMIT), a rollback, or a crash (Postgres frees row locks when the backend session ends).
-             * `reserved_at` is still stamped and heartbeated as the crash-recovery marker:
-             * after a crash, the stale filter makes the orphaned row claimable again only once
-             * `retry_after` has passed, and the heartbeat keeps a still-alive worker's job from being reclaimed
-             * even if its transaction was dropped out from under it (connection timeout).
-             */
-            const outcome: "idle" | "ok" | "failed" = await JobModel.transaction(
-                async (trx: any): Promise<"idle" | "ok" | "failed"> => {
-                    const claimNow: number = Luxon.DateTime.now().toUnixInteger();
-                    const staleBefore: number = claimNow - retryAfter;
+            const claimNow: number = Luxon.DateTime.now().toUnixInteger();
+            const staleBefore: number = claimNow - retryAfter;
 
-                    /**
-                     * Claim via row lock: `SKIP LOCKED` skips rows locked by other
-                     * workers' in-flight transactions -- the "already taken" signal.
-                     */
-                    const job: any = await JobModel.query(trx)
+            /**
+             * Portable, database-agnostic claim (see `JobModel.claim()`): no `FOR UPDATE`,
+             * no `SKIP LOCKED`, no `RETURNING` -- just a compare-and-swap `UPDATE ... WHERE`
+             * that only one concurrent worker's write can match.
+             */
+            const job: any = await JobModel.claim(
+                (builder: any) =>
+                    builder
                         .where("attempts", "<", 3)
                         .where("available_at", "<=", claimNow)
-                        .where((builder: any) =>
-                            builder
-                                .whereNull("reserved_at")
-                                .orWhere("reserved_at", "<", staleBefore)
-                        )
-                        .orderBy("id", "asc")
-                        .forUpdate()
-                        .skipLocked()
-                        .first();
-
-                    if (!job?.id) return "idle";
-
-                    /**
-                     * Stamp the reservation so crash recovery has a marker;
-                     * the lock itself is what excludes other workers while we process.
-                     */
-                    await JobModel.query(trx).findById(job.id).patch({
-                        reserved_at: claimNow
-                    });
-
-                    /**
-                     * Heartbeat while the handler runs: refresh `reserved_at` every half of `retry_after`
-                     * so a long-running job is never reclaimed by another worker
-                     * if its transaction gets dropped while alive.
-                     */
-                    const beatInterval: number = Math.max(
-                        1000,
-                        Math.floor((retryAfter * 1000) / 2)
-                    );
-
-                    let heartbeat: ReturnType<typeof setInterval> | null = null;
-
-                    const startHeartbeat = (): void => {
-                        if (heartbeat) return;
-
-                        heartbeat = setInterval(() => {
-                            void JobModel.query()
-                                .where("id", job.id)
-                                .patch({
-                                    reserved_at: Luxon.DateTime.now().toUnixInteger()
-                                })
-                                .catch(() => null);
-                        }, beatInterval);
-
-                        if (heartbeat.unref) heartbeat.unref();
-                    };
-
-                    const stopHeartbeat = (): void => {
-                        if (heartbeat) {
-                            clearInterval(heartbeat);
-                            heartbeat = null;
-                        }
-                    };
-
-                    // Dynamically resolves and invokes the job class's `handle()` with its stored payload.
-                    const handler: any = async () => {
-                        const module = await import(App.Path.rootPath(job.queue));
-
-                        const Class = module.default;
-                        if (!Class)
-                            throw new RuntimeException(`Job class not found [${job.queue}].`);
-
-                        const instance = new Class();
-
-                        if (typeof instance.handle !== "function")
-                            throw new RuntimeException(
-                                `Job class has no handle function in [${job.queue}].`
-                            );
-
-                        await instance.handle(Bun.JSON5.parse(job.payload));
-                    };
-
-                    /**
-                     * Kill the worker (via watchdog) if this job overruns `timeoutSec`
-                     * (SIGTERM, then SIGKILL after a 2s grace): a wedged worker is freed by the OS,
-                     * and Postgres releases its row lock with the dead session,
-                     * leaving the orphan reclaimable after `retry_after`.
-                     */
-                    const watchdog: Watchdog | null = spawnWatchdog(process.pid, timeoutSec * 1000);
-
-                    try {
-                        startHeartbeat();
-
-                        await handler();
-
-                        /**
-                         * Stop beating FIRST so no heartbeat can re-stamp the reservation
-                         * after the terminal write, then hard-delete inside the same tx.
-                         */
-                        stopHeartbeat();
-
-                        await JobModel.query(trx).findById(job.id).delete();
-
-                        return "ok";
-                    } catch {
-                        /**
-                         * Stop beating, then bump the attempt count atomically and release
-                         * the reservation so the job can be retried (or dead-lettered once attempts hits 3).
-                         * All inside the same tx.
-                         */
-                        stopHeartbeat();
-
-                        await JobModel.query(trx)
-                            .findById(job.id)
-                            .increment("attempts", 1)
-                            .patch({reserved_at: null});
-
-                        return "failed";
-                    } finally {
-                        stopHeartbeat();
-
-                        killWatchdog(watchdog);
-                    }
-                }
+                        .where((sub: any) =>
+                            sub.whereNull("reserved_at").orWhere("reserved_at", "<", staleBefore)
+                        ),
+                claimNow
             );
 
-            if (outcome === "idle") await interruptibleSleep(pollInterval * 1000);
-            else if (outcome === "failed") await interruptibleSleep(retryDelay * 1000);
+            if (!job?.id) {
+                await interruptibleSleep(pollInterval * 1000);
+
+                continue;
+            }
+
+            /**
+             * Heartbeat while the handler runs: refresh `reserved_at` every half of
+             * `retry_after` so a long-running job is never reclaimed by another worker.
+             * This is now the PRIMARY exclusivity mechanism during processing (the claim's
+             * row lock is long gone by the time we get here), which is exactly why
+             * `--timeout` below must stay <= `retry_after`.
+             */
+            const beatInterval: number = Math.max(1000, Math.floor((retryAfter * 1000) / 2));
+
+            let heartbeat: ReturnType<typeof setInterval> | null = null;
+
+            /**
+             * Guards against overlapping heartbeat writes piling up if the database is slow
+             * to respond to one tick before the next is due.
+             */
+            let beatInFlight: boolean = false;
+
+            /**
+             * Consecutive heartbeat failures. Logged loudly (not just swallowed) because a
+             * silently-failing heartbeat is exactly how a job that's still running loses its
+             * reservation and gets double-claimed by another worker -- this is the most likely
+             * real-world cause of that failure mode (e.g. a connection dropped or recycled by
+             * a transaction-mode connection pooler mid-job), so it needs to be visible.
+             */
+            let beatFailures: number = 0;
+
+            const startHeartbeat = (): void => {
+                if (heartbeat) return;
+
+                heartbeat = setInterval(() => {
+                    if (beatInFlight) return;
+
+                    beatInFlight = true;
+
+                    JobModel.query()
+                        .where("id", job.id)
+                        .patch({
+                            reserved_at: Luxon.DateTime.now().toUnixInteger()
+                        })
+                        .then((): void => {
+                            beatInFlight = false;
+                            beatFailures = 0;
+                        })
+                        .catch((error: any): void => {
+                            beatInFlight = false;
+                            beatFailures++;
+
+                            Logger.setContext("Queue").error(
+                                `Heartbeat failed for job [${job.id}] (${beatFailures}x in a row) -- ` +
+                                    `its reservation may go stale and be reclaimed by another worker ` +
+                                    `while this one is still running it: ${error?.message ?? error}`
+                            );
+                        });
+                }, beatInterval);
+
+                if (heartbeat.unref) heartbeat.unref();
+            };
+
+            const stopHeartbeat = (): void => {
+                if (heartbeat) {
+                    clearInterval(heartbeat);
+                    heartbeat = null;
+                }
+            };
+
+            // Dynamically resolves and invokes the job class's `handle()` with its stored payload.
+            const handler: any = async () => {
+                const module = await import(App.Path.rootPath(job.queue));
+
+                const Class = module.default;
+                if (!Class) throw new RuntimeException(`Job class not found [${job.queue}].`);
+
+                const instance = new Class();
+
+                if (typeof instance.handle !== "function")
+                    throw new RuntimeException(
+                        `Job class has no handle function in [${job.queue}].`
+                    );
+
+                await instance.handle(Bun.JSON5.parse(job.payload));
+            };
+
+            /**
+             * Kill the worker (via watchdog) if this job overruns `timeoutSec`
+             * (SIGTERM, then SIGKILL after a 2s grace): a wedged worker is freed by the OS
+             * before `retry_after` makes its job reclaimable by anyone else.
+             */
+            const watchdog: Watchdog | null = spawnWatchdog(process.pid, timeoutSec * 1000);
+
+            let outcome: "ok" | "failed";
+
+            try {
+                startHeartbeat();
+
+                await handler();
+
+                /**
+                 * Stop beating FIRST so no heartbeat can re-stamp the reservation
+                 * after the terminal write, then hard-delete.
+                 */
+                stopHeartbeat();
+
+                await JobModel.query().findById(job.id).delete();
+
+                outcome = "ok";
+            } catch {
+                /**
+                 * Stop beating, then bump the attempt count and release the reservation
+                 * so the job can be retried (or dead-lettered once attempts hits 3).
+                 * Two separate statements -- Objection rejects chaining `.increment()`
+                 * (itself a `.patch()` call) with another `.patch()` on the same builder.
+                 */
+                stopHeartbeat();
+
+                await JobModel.query().findById(job.id).increment("attempts", 1);
+                await JobModel.query().findById(job.id).patch({reserved_at: null});
+
+                outcome = "failed";
+            } finally {
+                stopHeartbeat();
+
+                killWatchdog(watchdog);
+            }
+
+            if (outcome === "failed") await interruptibleSleep(retryDelay * 1000);
         }
     }
 }
