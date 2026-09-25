@@ -143,6 +143,13 @@ export default class QueueWorkCommand {
                 if (!claimed)
                     continue;
                 /**
+                 * The `reserved_at` stamp this worker owns right now. Every terminal write
+                 * (delete on success, release+bump on failure) is guarded on this exact value,
+                 * so a stale worker that resumes after losing its reservation to a reclaim
+                 * can never stomp the current owner's row.
+                 */
+                const claimStamp = now;
+                /**
                  * Heartbeat while the handler runs: refresh `reserved_at` every half of `retry_after`
                  * so a long-running job is never re-claimed by another worker from this one's in-flight copy.
                  * Only a worker that actually dies stops beating, leaving the reservation to
@@ -184,16 +191,39 @@ export default class QueueWorkCommand {
                 try {
                     startHeartbeat();
                     await handler();
-                    await JobModel.query().findById(job.id).delete();
+                    /**
+                     * Stop beating FIRST so no heartbeat can re-stamp the reservation after
+                     * the terminal write. Delete only if this worker still owns the claim --
+                     * if the row was reclaimed while we stalled, leave it to the new owner.
+                     */
+                    stopHeartbeat();
+                    await JobModel.query()
+                        .where("id", job.id)
+                        .where("reserved_at", claimStamp)
+                        .delete();
                 }
                 catch {
-                    // On failure: bump the attempt count (atomically, on the row) and release the
-                    // reservation so it can be retried (or eventually dead-lettered once attempts hits 3).
-                    await JobModel.query()
-                        .findById(job.id)
-                        .update({
-                        attempts: (Number(job.attempts) || 0) + 1,
-                        reserved_at: null
+                    /**
+                     * Stop beating, then release the reservation -- but ONLY if this worker still owns it.
+                     * A guarded release keeps a stalled-then-failing worker
+                     * from wiping the reservation of the worker that reclaimed the job,
+                     * which would let a third worker claim it and double-execute.
+                     */
+                    stopHeartbeat();
+                    await JobModel.transaction(async (trx) => {
+                        const released = await trx
+                            .query()
+                            .where("id", job.id)
+                            .where("reserved_at", claimStamp)
+                            .update({
+                            reserved_at: null
+                        });
+                        /**
+                         * Bump the attempt count atomically, only when the release actually
+                         * landed (i.e. we were still the owner).
+                         */
+                        if (released > 0)
+                            await trx.query().where("id", job.id).increment("attempts", 1);
                     });
                     await interruptibleSleep(retryDelay * 1000);
                 }

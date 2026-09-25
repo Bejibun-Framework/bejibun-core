@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v0.6.22](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.22) - 2026-09-25
+## [v0.6.23](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.23) - 2026-09-25
 
 ### 🩹 Fixes
 - `queue:work` no longer double-executes jobs under concurrency:
