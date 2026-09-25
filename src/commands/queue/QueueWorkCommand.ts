@@ -127,12 +127,15 @@ export default class QueueWorkCommand {
         Logger.setContext("Queue").info("Queue worker started.");
 
         while (running) {
-            // Jobs reserved before this cutoff are treated as abandoned (e.g. worker crash) and become claimable again.
-            const staleBefore: number = Luxon.DateTime.now().toUnixInteger() - retryAfter;
+            const now: number = Luxon.DateTime.now().toUnixInteger();
 
-            // Find the oldest eligible job: under the attempt limit, and either unreserved or staled out.
+            // Jobs reserved before this cutoff are treated as abandoned (e.g. worker crash) and become claimable again.
+            const staleBefore: number = now - retryAfter;
+
+            // Find the oldest eligible job: available now, under the attempt limit, and either unreserved or staled out.
             const job: any = await JobModel.query()
                 .where("attempts", "<", 3)
+                .where("available_at", "<=", now)
                 .where((builder: any) =>
                     builder.whereNull("reserved_at").orWhere("reserved_at", "<", staleBefore)
                 )
@@ -143,17 +146,53 @@ export default class QueueWorkCommand {
                 await interruptibleSleep(pollInterval * 1000);
             } else {
                 // Atomically claim the job by stamping `reserved_at`, re-checking the same eligibility
-                // conditions to avoid a race with another worker claiming it first.
+                // conditions (with a fresh cutoff and `available_at` gate) to avoid a race with
+                // another worker claiming it first.
+                const now: number = Luxon.DateTime.now().toUnixInteger();
                 const claimed: any = await JobModel.query()
                     .where("id", job.id)
                     .where("attempts", "<", 3)
+                    .where("available_at", "<=", now)
                     .where((builder: any) =>
-                        builder.whereNull("reserved_at").orWhere("reserved_at", "<", staleBefore)
+                        builder
+                            .whereNull("reserved_at")
+                            .orWhere("reserved_at", "<", now - retryAfter)
                     )
                     .update({
-                        reserved_at: Luxon.DateTime.now().toUnixInteger()
+                        reserved_at: now
                     });
                 if (!claimed) continue;
+
+                /**
+                 * Heartbeat while the handler runs: refresh `reserved_at` every half of `retry_after`
+                 * so a long-running job is never re-claimed by another worker from this one's in-flight copy.
+                 * Only a worker that actually dies stops beating, leaving the reservation to
+                 * age past `retry_after` and become safely reclaimable.
+                 */
+                const beatInterval: number = Math.max(1000, Math.floor((retryAfter * 1000) / 2));
+                let heartbeat: ReturnType<typeof setInterval> | null = null;
+
+                const startHeartbeat = (): void => {
+                    if (heartbeat) return;
+
+                    heartbeat = setInterval(() => {
+                        void JobModel.query()
+                            .where("id", job.id)
+                            .update({
+                                reserved_at: Luxon.DateTime.now().toUnixInteger()
+                            })
+                            .catch(() => null);
+                    }, beatInterval);
+
+                    if (heartbeat.unref) heartbeat.unref();
+                };
+
+                const stopHeartbeat = (): void => {
+                    if (heartbeat) {
+                        clearInterval(heartbeat);
+                        heartbeat = null;
+                    }
+                };
 
                 // Dynamically resolves and invokes the job class's `handle()` with its stored payload.
                 const handler: any = async () => {
@@ -172,10 +211,12 @@ export default class QueueWorkCommand {
                 };
 
                 try {
+                    startHeartbeat();
                     await handler();
                     await JobModel.query().findById(job.id).delete();
                 } catch {
-                    // On failure: bump the attempt count and release the reservation so it can be retried (or eventually dead-lettered once attempts hits 3).
+                    // On failure: bump the attempt count (atomically, on the row) and release the
+                    // reservation so it can be retried (or eventually dead-lettered once attempts hits 3).
                     await JobModel.query()
                         .findById(job.id)
                         .update({
@@ -184,6 +225,8 @@ export default class QueueWorkCommand {
                         });
 
                     await interruptibleSleep(retryDelay * 1000);
+                } finally {
+                    stopHeartbeat();
                 }
             }
         }

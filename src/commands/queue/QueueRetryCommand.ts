@@ -61,8 +61,11 @@ export default class QueueRetryCommand {
         process.on("SIGTERM", (): void => stop("SIGTERM"));
 
         while (running) {
+            const now: number = Luxon.DateTime.now().toUnixInteger();
+
             const job: any = await JobModel.query()
                 .where("attempts", ">=", 3)
+                .where("available_at", "<=", now)
                 .whereNull("reserved_at")
                 .orderBy("id", "asc")
                 .first();
@@ -73,9 +76,10 @@ export default class QueueRetryCommand {
                 const claimed: any = await JobModel.query()
                     .where("id", job.id)
                     .where("attempts", ">=", 3)
+                    .where("available_at", "<=", Luxon.DateTime.now().toUnixInteger())
                     .whereNull("reserved_at")
                     .update({
-                        reserved_at: Luxon.DateTime.now().toUnixInteger()
+                        reserved_at: now
                     });
                 if (!claimed) continue;
 

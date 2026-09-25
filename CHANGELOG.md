@@ -3,6 +3,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.22](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.22) - 2026-09-25
+
+### 🩹 Fixes
+- `queue:work` no longer double-executes jobs under concurrency:
+  - the worker heartbeats `reserved_at` every `retry_after / 2` while a job's `handle()` is running, so a long-running job is never re-claimed by another worker from the in-flight copy (only a dead worker stops beating and lets the reservation age out)
+  - jobs gated on `available_at <= now` on both the select and the atomic claim, so delayed (`delay()`) jobs are not picked up early
+  - the failure path bumps `attempts` atomically (`attempts + 1`) instead of from a stale read
+- `queue:retry` aligns with the same `available_at` gate and atomic attempt bump
+
+### 📖 Changes
+
+### 📦 Dependencies
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.21](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.20...v0.6.21) - 2026-09-24
 
 ### 🩹 Fixes
