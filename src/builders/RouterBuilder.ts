@@ -1,4 +1,4 @@
-import type {EnumItem} from "@bejibun/utils/facades/Enum";
+import type {EnumItem} from "@bejibun/utils/types";
 import type {TFacilitator, TRoutePayment} from "@bejibun/x402/types";
 import type {ApiDocConfig} from "@/decorators/ApiDocDecorator";
 import type {IMiddleware} from "@/types/middleware";
