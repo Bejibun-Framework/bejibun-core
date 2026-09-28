@@ -12,7 +12,7 @@
         "@bejibun/limiter": "^0.1.13",
         "@bejibun/logger": "^0.2.10",
         "@bejibun/storage": "^0.1.12",
-        "@bejibun/utils": "^0.1.31",
+        "@bejibun/utils": "^0.1.32",
         "@vinejs/vine": "^4.4.0",
         "commander": "^15.0.0",
         "cron-parser": "^5.10.1",
@@ -54,7 +54,7 @@
 
     "@bejibun/storage": ["@bejibun/storage@0.1.12", "", { "dependencies": { "@bejibun/app": "^0.1.27", "@bejibun/logger": "^0.2.10", "@bejibun/utils": "^0.1.31" } }, "sha512-DzGImcdOsMmNPf8IwJnwcQ1qemzLtrtZmk4VbHLKAwQVhEX93j02wh3b/eOcBpX3eS9JDupvIYaC5tOhant0ZQ=="],
 
-    "@bejibun/utils": ["@bejibun/utils@0.1.31", "", { "dependencies": { "@bejibun/logger": "^0.2.10", "luxon": "^3.7.2" } }, "sha512-f0ELrpkppeFVp7P0tn3E3UUKnYV2W+OFBGM6r3NwPp5OZIh8Nlk3CeqzC5o+ry41BTJpDFdBE0dWM7f0/ew6kA=="],
+    "@bejibun/utils": ["@bejibun/utils@0.1.32", "", { "dependencies": { "@bejibun/logger": "^0.2.10", "luxon": "^3.7.2" } }, "sha512-fteANI5YjV4uqFppaIWtNqcyDS7Ngk1JNLm00XHCWVdILFm0TjP9pJ7Y9qUIXn8zgq/kdw4wb2vejkMrscQeHA=="],
 
     "@bejibun/x402": ["@bejibun/x402@0.2.13", "", { "dependencies": { "@bejibun/app": "^0.1.27", "@bejibun/logger": "^0.2.10", "@bejibun/utils": "^0.1.31", "@coinbase/x402": "^2.1.0", "@x402/core": "^2.25.0", "@x402/evm": "^2.25.0", "@x402/svm": "^2.25.0" } }, "sha512-LZNFwGoY6/IApiP68uAJFJs/CIWXn1a/pgG3XqFBWuwfIpimKNHJXK8TrbSAFdTh57L0ie0KQLcJLGhZVmvnlg=="],
 

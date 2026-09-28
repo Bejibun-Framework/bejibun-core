@@ -3,6 +3,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.27](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.26...v0.6.27) - 2026-09-28
+
+### 🩹 Fixes
+#### [`@bejibun/utils`](https://github.com/Bejibun-Framework/bejibun-utils) `ObjectBuilder.serialize()`
+Fixed a crash when serializing an object containing an array (e.g. an array of nested objects). The recursion passed `this.normalize` as an unbound callback to `Array.map()`, so inside the callback `this` was `undefined` and any nested object threw `TypeError: undefined is not an object (evaluating 'this.normalize')`. The callback is now a closure that keeps the builder bound.
+
+### 📖 Changes
+
+### 📦 Dependencies
+- Bumped [`@bejibun/utils`](https://github.com/Bejibun-Framework/bejibun-utils) from `^0.1.31` to `^0.1.32`
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.26](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.21...v0.6.26) - 2026-09-25
 
 ### 🩹 Fixes
@@ -61,7 +79,7 @@ All notable changes to this project will be documented in this file.
 
 ### ❤️Contributors
 - Havea Crenata ([@crenata](https://github.com/crenata))
-
+  
 **Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
 
 ---
