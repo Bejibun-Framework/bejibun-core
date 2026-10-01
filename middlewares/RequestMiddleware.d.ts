@@ -1,4 +1,4 @@
-import type { HandlerType } from "../types/router.d.ts";
+import type { HandlerType } from "../types/router.js";
 /**
  * Middleware that parses the incoming request body/query/route params
  * into a single `request.payload` map, which every accessor attached by

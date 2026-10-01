@@ -1,10 +1,10 @@
 import type { TFacilitator, TRoutePayment } from "@bejibun/x402/types";
-import type { IMiddleware } from "../types/middleware.d.ts";
-import type { HandlerType, ResourceOptions, RouterGroup } from "../types/router.d.ts";
+import type { IMiddleware } from "../types/middleware.js";
+import type { HandlerType, ResourceOptions, RouterGroup } from "../types/router.js";
 import HttpMethodEnum from "@bejibun/utils/enums/HttpMethodEnum";
 import BaseController from "../bases/BaseController.js";
 import RouterBuilder from "../builders/RouterBuilder.js";
-import { Route } from "../types/router.d.ts";
+import { Route } from "../types/router.js";
 /**
  * Static facade over `RouterBuilder`. Every method here creates a fresh
  * `RouterBuilder` instance and immediately forwards to the matching

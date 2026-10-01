@@ -102,13 +102,11 @@ export default class BaseModel extends Model {
      * have a value set on the instance.
      */
     $beforeInsert(): void {
+        const model = this.constructor as typeof BaseModel;
         const now = Luxon.DateTime.now() as any;
-        if ((this as any)[(this.constructor as any).createdColumn]) {
-            (this as any)[(this.constructor as any).createdColumn] = now;
-        }
-        if ((this as any)[(this.constructor as any).updatedColumn]) {
-            (this as any)[(this.constructor as any).updatedColumn] = now;
-        }
+
+        (this as any)[model.createdColumn] ??= now;
+        (this as any)[model.updatedColumn] ??= now;
     }
 
     /**
@@ -117,9 +115,9 @@ export default class BaseModel extends Model {
      * the instance.
      */
     $beforeUpdate(): void {
-        if ((this as any)[(this.constructor as any).updatedColumn]) {
-            (this as any)[(this.constructor as any).updatedColumn] = Luxon.DateTime.now() as any;
-        }
+        const model = this.constructor as typeof BaseModel;
+
+        (this as any)[model.updatedColumn] ??= Luxon.DateTime.now();
     }
 
     /**

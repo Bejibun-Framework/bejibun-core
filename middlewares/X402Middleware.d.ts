@@ -1,5 +1,5 @@
 import type { TFacilitator, TRoutePayment } from "@bejibun/x402/types";
-import type { HandlerType } from "../types/router.d.ts";
+import type { HandlerType } from "../types/router.js";
 /**
  * Middleware that gates a route behind x402 payment verification, via the
  * optional `@bejibun/x402` package. Attached to a route through

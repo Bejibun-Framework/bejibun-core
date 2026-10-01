@@ -69,13 +69,10 @@ export default class BaseModel extends Model {
      * have a value set on the instance.
      */
     $beforeInsert() {
+        const model = this.constructor;
         const now = Luxon.DateTime.now();
-        if (this[this.constructor.createdColumn]) {
-            this[this.constructor.createdColumn] = now;
-        }
-        if (this[this.constructor.updatedColumn]) {
-            this[this.constructor.updatedColumn] = now;
-        }
+        this[model.createdColumn] ??= now;
+        this[model.updatedColumn] ??= now;
     }
     /**
      * Objection lifecycle hook: stamps `updatedColumn` with the current
@@ -83,9 +80,8 @@ export default class BaseModel extends Model {
      * the instance.
      */
     $beforeUpdate() {
-        if (this[this.constructor.updatedColumn]) {
-            this[this.constructor.updatedColumn] = Luxon.DateTime.now();
-        }
+        const model = this.constructor;
+        this[model.updatedColumn] ??= Luxon.DateTime.now();
     }
     /**
      * Registers the namespace/identifier this model is resolved under.

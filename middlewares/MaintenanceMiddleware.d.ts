@@ -1,4 +1,4 @@
-import type { HandlerType } from "../types/router.d.ts";
+import type { HandlerType } from "../types/router.js";
 /**
  * Middleware that short-circuits every request with the configured
  * maintenance message/status while the application is in maintenance

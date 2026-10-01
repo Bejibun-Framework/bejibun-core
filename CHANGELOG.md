@@ -3,6 +3,35 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.28](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.27...v0.6.28) - 2026-10-01
+
+### 🩹 Fixes
+- **BaseModel:** Fixed automatic timestamps so they behave as documented in the Models guide.
+  - `$beforeInsert` now sets `created_at` and `updated_at` when they are missing. Previously it only touched columns that already had a value, so inserts without these columns stored `NULL` unless the table had a database default.
+  - `$beforeUpdate` now sets `updated_at` when it is missing. This means `query().patch()` and `query().update()` refresh `updated_at`, because Objection builds the instance from the patch object, which does not contain the column.
+  - Timestamp values explicitly provided by the caller are no longer overwritten, so rows can be imported with their original `created_at` / `updated_at`.
+
+### 📖 Changes
+#### [`@bejibun/utils`](https://github.com/Bejibun-Framework/bejibun-utils)
+
+- `Str.pluralize()`
+
+Added a naive pluralizer to the Str facade and StrBuilder, inferring an English plural without inflection tables: post -> posts, box -> boxes, city -> cities, life -> lives. Follows the standard builder pattern (combine returns the builder for chaining, otherwise the pluralized string).
+
+### 📦 Dependencies
+- Bumped [`@bejibun/utils`](https://github.com/Bejibun-Framework/bejibun-utils) from `^0.1.32` to `^0.1.33`
+- Bumped `globals` (devDependency) from `^17.12.0` to `^17.13.0`
+- Bumped `tsc-alias` (devDependency) from `^1.9.5` to `^1.9.7`
+- Bumped `typescript-eslint` (devDependency) from `^8.70.1` to `^8.71.0`
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+- Gerardo PG ([@gerardp](https://github.com/gerardp))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.27](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.26...v0.6.27) - 2026-09-28
 
 ### 🩹 Fixes

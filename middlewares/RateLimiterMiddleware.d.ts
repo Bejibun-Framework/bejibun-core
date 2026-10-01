@@ -1,4 +1,4 @@
-import type { HandlerType } from "../types/router.d.ts";
+import type { HandlerType } from "../types/router.js";
 /**
  * Middleware that rate-limits requests per client IP, using `@bejibun/limiter`.
  * Falls back to the package's bundled `LimiterConfig` when the application

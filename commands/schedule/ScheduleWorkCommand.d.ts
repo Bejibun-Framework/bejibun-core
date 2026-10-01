@@ -1,4 +1,4 @@
-import type { TSchedule } from "../../types/schedule.d.ts";
+import type { TSchedule } from "../../types/schedule.js";
 import { CronExpression } from "cron-parser";
 /** A schedule entry enriched with a parsed cron expression and the next run timestamp. */
 type TPreparedSchedule = TSchedule & {

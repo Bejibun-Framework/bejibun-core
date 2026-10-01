@@ -1,7 +1,7 @@
 import type { TFacilitator, TRoutePayment } from "@bejibun/x402/types";
 import type { ApiDocConfig } from "../decorators/ApiDocDecorator.js";
-import type { IMiddleware } from "../types/middleware.d.ts";
-import type { HandlerType, RawsRoute, ResourceOptions, Route, RouterGroup } from "../types/router.d.ts";
+import type { IMiddleware } from "../types/middleware.js";
+import type { HandlerType, RawsRoute, ResourceOptions, Route, RouterGroup } from "../types/router.js";
 import HttpMethodEnum from "@bejibun/utils/enums/HttpMethodEnum";
 import "reflect-metadata";
 import BaseController from "../bases/BaseController.js";
