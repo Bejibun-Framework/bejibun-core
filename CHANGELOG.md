@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.29](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.28...v0.6.29) - 2026-10-02
+
+### 🩹 Fixes
+#### [`@bejibun/storage`](https://github.com/Bejibun-Framework/bejibun-storage)
+- Removed the silent error swallowing in `StorageBuilder`, `StorageLocalBuilder`, and `StorageS3Builder`. `put()`, `copy()`, and `move()` previously caught every driver error, logged it, and returned `undefined` — a failing write/copy/move looked like success. Now the underlying driver error is re-thrown to the caller.
+
+### 📖 Changes
+#### [`@bejibun/storage`](https://github.com/Bejibun-Framework/bejibun-storage)
+- `put()`, `copy()`, and `move()` now propagate driver errors (`Bun.write`/filesystem or S3 failures) instead of logging and continuing.
+- Removed the now-unused `Logger` import from the three builders.
+- Documented the re-throw behavior in the JSDoc `@throws` tags of `put()`, `copy()`, and `move()`.
+
+### 📦 Dependencies
+- Bumped [`@bejibun/storage`](https://github.com/Bejibun-Framework/bejibun-storage) from `^0.1.12` to `^0.1.13`
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.28](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.27...v0.6.28) - 2026-10-01
 
 ### 🩹 Fixes
