@@ -9,27 +9,27 @@
     "main": "index.js",
     "module": "index.js",
     "dependencies": {
-        "@bejibun/app": "^0.1.24",
-        "@bejibun/cache": "^0.1.24",
-        "@bejibun/cors": "^0.1.17",
-        "@bejibun/database": "^0.1.21",
-        "@bejibun/limiter": "^0.1.1",
-        "@bejibun/logger": "^0.1.22",
-        "@bejibun/storage": "^0.1.0",
-        "@bejibun/utils": "^0.1.32",
+        "@bejibun/app": "^0.1.27",
+        "@bejibun/cache": "^0.1.27",
+        "@bejibun/cors": "^0.1.20",
+        "@bejibun/database": "^0.1.25",
+        "@bejibun/limiter": "^0.1.13",
+        "@bejibun/logger": "^0.1.23",
+        "@bejibun/storage": "^0.1.13",
+        "@bejibun/utils": "^0.1.33",
         "@vinejs/vine": "^4.4.0",
         "commander": "^15.0.0",
-        "cron-parser": "^5.10.0",
+        "cron-parser": "^5.10.1",
         "luxon": "^3.7.2",
         "objection": "^3.1.5",
         "reflect-metadata": "^0.2.2"
     },
     "devDependencies": {
-        "@bejibun/x402": "^0.2.1",
-        "@types/bun": "latest",
-        "@types/luxon": "^3.7.4",
+        "@bejibun/x402": "^0.2.13",
+        "@types/bun": "1.4.2",
+        "@types/luxon": "^3.7.6",
         "@types/reflect-metadata": "^0.1.0",
-        "tsc-alias": "^1.9.1"
+        "tsc-alias": "^1.9.7"
     },
     "bugs": {
         "url": "https://github.com/Bejibun-Framework/bejibun-core/issues"
