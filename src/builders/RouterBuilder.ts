@@ -210,8 +210,14 @@ export default class RouterBuilder {
             route.raw.middlewares || []
         );
         const effectiveNamespace: string = route.raw.websocket
-            ? defineValue("app/websockets", route.raw.namespace)
-            : defineValue(this.baseNamespace, route.raw.namespace);
+            ? defineValue(
+                  this.baseNamespace === "app/websockets" ? null : this.baseNamespace,
+                  route.raw.namespace
+              )
+            : defineValue(
+                  this.baseNamespace === "app/controllers" ? null : this.baseNamespace,
+                  route.raw.namespace
+              );
         const cleanPath: string = this.joinPaths(route.raw.prefix || this.basePath, route.raw.path);
 
         let resolvedHandler: HandlerType =
@@ -709,7 +715,7 @@ export default class RouterBuilder {
         } catch {
             return async () => {
                 throw new RouterException(
-                    `Invalid router for controller location [${controllerPath}]`
+                    `Controller [${controllerName}] not found in [${controllerPath}] (handler: "${definition}").`
                 );
             };
         }

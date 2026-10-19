@@ -1,6 +1,6 @@
 {
     "name": "@bejibun/core",
-    "version": "0.6.29",
+    "version": "0.6.30",
     "author": "Havea Crenata <havea.crenata@gmail.com>",
     "repository": {
         "type": "git",
@@ -11,15 +11,15 @@
     "devDependencies": {
         "@bejibun/x402": "^0.2.13",
         "@eslint/js": "^10.0.1",
-        "@types/bun": "^1.4.2",
+        "@types/bun": "^1.4.3",
         "@types/reflect-metadata": "^0.1.0",
-        "eslint": "^10.11.0",
+        "eslint": "^10.13.0",
         "eslint-config-prettier": "^10.1.8",
         "globals": "^17.13.0",
-        "prettier": "^3.9.9",
-        "tsc-alias": "^1.9.7",
+        "prettier": "^3.9.10",
+        "tsc-alias": "^1.9.8",
         "typescript": "^6.0.3",
-        "typescript-eslint": "^8.71.0"
+        "typescript-eslint": "^8.71.2"
     },
     "bugs": {
         "url": "https://github.com/Bejibun-Framework/bejibun-core/issues"
@@ -60,9 +60,9 @@
         "@bejibun/utils": "^0.1.33",
         "@vinejs/vine": "^4.4.0",
         "commander": "^15.0.0",
-        "cron-parser": "^5.10.1",
+        "cron-parser": "^5.10.2",
         "luxon": "^3.7.2",
-        "objection": "^3.1.5",
+        "objection": "^3.9.1",
         "reflect-metadata": "^0.2.2"
     }
 }

@@ -15,7 +15,6 @@ export default class SoftDeletes extends QueryBuilder {
      * @param {ModelClass<M>} modelClass - The Objection model class this query builder is bound to.
      */
     constructor(modelClass) {
-        // @ts-expect-error - QueryBuilder's constructor is protected/internal in Objection's types; subclassing requires bypassing that.
         super(modelClass);
         // Registers the soft-delete WHERE clause to run once, right before the query executes.
         this.onBuild((builder) => {
