@@ -66,14 +66,14 @@ export default class BaseModel extends Model {
     /** The primary key column name. */
     public static idColumn: string;
 
-    /** The column that stores the creation timestamp. */
-    public static createdColumn: string = "created_at";
+    /** The column that stores the creation timestamp, or null to disable it. */
+    public static createdColumn: string | null = "created_at";
 
-    /** The column that stores the last-updated timestamp. */
-    public static updatedColumn: string = "updated_at";
+    /** The column that stores the last-updated timestamp, or null to disable it. */
+    public static updatedColumn: string | null = "updated_at";
 
-    /** The column that stores the soft-delete timestamp. */
-    public static deletedColumn: string = "deleted_at";
+    /** The column that stores the soft-delete timestamp, or null to disable it. */
+    public static deletedColumn: string | null = "deleted_at";
 
     /** The soft-delete-aware query builder class used for all queries on this model. */
     public static QueryBuilder = BunQueryBuilder as unknown as typeof QueryBuilder;
@@ -98,26 +98,26 @@ export default class BaseModel extends Model {
 
     /**
      * Objection lifecycle hook: stamps `createdColumn`/`updatedColumn`
-     * with the current time before an insert, if those columns already
-     * have a value set on the instance.
+     * with the current time before an insert when enabled and their values
+     * are null or undefined.
      */
     $beforeInsert(): void {
         const model = this.constructor as typeof BaseModel;
         const now = Luxon.DateTime.now() as any;
 
-        (this as any)[model.createdColumn] ??= now;
-        (this as any)[model.updatedColumn] ??= now;
+        if (model.createdColumn !== null) (this as any)[model.createdColumn] ??= now;
+        if (model.updatedColumn !== null) (this as any)[model.updatedColumn] ??= now;
     }
 
     /**
      * Objection lifecycle hook: stamps `updatedColumn` with the current
-     * time before an update, if that column already has a value set on
-     * the instance.
+     * time before an update when enabled and its value is null or undefined.
      */
     $beforeUpdate(): void {
         const model = this.constructor as typeof BaseModel;
 
-        (this as any)[model.updatedColumn] ??= Luxon.DateTime.now();
+        if (model.updatedColumn !== null)
+            (this as any)[model.updatedColumn] ??= Luxon.DateTime.now();
     }
 
     /**

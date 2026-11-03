@@ -5,7 +5,9 @@ import { QueryBuilder, ModelClass, Model } from "objection";
  * rows with a non-null `deletedColumn`, unless `withTrashed()` or
  * `onlyTrashed()` is called. `delete()` becomes a soft delete
  * (stamping `deletedColumn`) while `forceDelete()` performs a real
- * `DELETE`. Serves as the base for `BaseModel`'s `BunQueryBuilder`.
+ * `DELETE`. Setting `deletedColumn` to null disables filtering and makes
+ * `delete()` perform a real delete. Serves as the base for `BaseModel`'s
+ * `BunQueryBuilder`.
  */
 export default class SoftDeletes<M extends Model, R = M[]> extends QueryBuilder<M, R> {
     /** Guards against the soft-delete `WHERE` clause being applied more than once per query build. */
@@ -29,6 +31,7 @@ export default class SoftDeletes<M extends Model, R = M[]> extends QueryBuilder<
     /**
      * Soft-deletes matching rows by stamping `deletedColumn` with the
      * current timestamp, rather than removing them from the table.
+     * Performs a real delete when `deletedColumn` is null.
      *
      * @returns {QueryBuilder<M, number>} The query builder resolving to the number of affected rows.
      */
@@ -48,7 +51,8 @@ export default class SoftDeletes<M extends Model, R = M[]> extends QueryBuilder<
     forceDelete(): QueryBuilder<M, number>;
     /**
      * Restores soft-deleted rows by clearing `deletedColumn` back to `null`.
-     * Only affects rows found via `onlyTrashed()`.
+     * Only affects rows found via `onlyTrashed()`. Resolves to zero without
+     * updating rows when `deletedColumn` is null.
      *
      * @returns {QueryBuilder<M, number>} The query builder resolving to the number of affected rows.
      */

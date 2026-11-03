@@ -44,11 +44,11 @@ export default class BaseModel extends Model {
     static tableName;
     /** The primary key column name. */
     static idColumn;
-    /** The column that stores the creation timestamp. */
+    /** The column that stores the creation timestamp, or null to disable it. */
     static createdColumn = "created_at";
-    /** The column that stores the last-updated timestamp. */
+    /** The column that stores the last-updated timestamp, or null to disable it. */
     static updatedColumn = "updated_at";
-    /** The column that stores the soft-delete timestamp. */
+    /** The column that stores the soft-delete timestamp, or null to disable it. */
     static deletedColumn = "deleted_at";
     /** The soft-delete-aware query builder class used for all queries on this model. */
     static QueryBuilder = BunQueryBuilder;
@@ -65,23 +65,25 @@ export default class BaseModel extends Model {
     }
     /**
      * Objection lifecycle hook: stamps `createdColumn`/`updatedColumn`
-     * with the current time before an insert, if those columns already
-     * have a value set on the instance.
+     * with the current time before an insert when enabled and their values
+     * are null or undefined.
      */
     $beforeInsert() {
         const model = this.constructor;
         const now = Luxon.DateTime.now();
-        this[model.createdColumn] ??= now;
-        this[model.updatedColumn] ??= now;
+        if (model.createdColumn !== null)
+            this[model.createdColumn] ??= now;
+        if (model.updatedColumn !== null)
+            this[model.updatedColumn] ??= now;
     }
     /**
      * Objection lifecycle hook: stamps `updatedColumn` with the current
-     * time before an update, if that column already has a value set on
-     * the instance.
+     * time before an update when enabled and its value is null or undefined.
      */
     $beforeUpdate() {
         const model = this.constructor;
-        this[model.updatedColumn] ??= Luxon.DateTime.now();
+        if (model.updatedColumn !== null)
+            this[model.updatedColumn] ??= Luxon.DateTime.now();
     }
     /**
      * Registers the namespace/identifier this model is resolved under.

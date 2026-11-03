@@ -6,7 +6,9 @@ import { QueryBuilder } from "objection";
  * rows with a non-null `deletedColumn`, unless `withTrashed()` or
  * `onlyTrashed()` is called. `delete()` becomes a soft delete
  * (stamping `deletedColumn`) while `forceDelete()` performs a real
- * `DELETE`. Serves as the base for `BaseModel`'s `BunQueryBuilder`.
+ * `DELETE`. Setting `deletedColumn` to null disables filtering and makes
+ * `delete()` perform a real delete. Serves as the base for `BaseModel`'s
+ * `BunQueryBuilder`.
  */
 export default class SoftDeletes extends QueryBuilder {
     /** Guards against the soft-delete `WHERE` clause being applied more than once per query build. */
@@ -20,12 +22,16 @@ export default class SoftDeletes extends QueryBuilder {
         this.onBuild((builder) => {
             const context = this.context();
             if (!this.hasFilterApplied) {
-                const tableName = this.modelClass().tableName;
+                const modelClass = this.modelClass();
+                const tableName = modelClass.tableName;
+                const deletedColumn = modelClass.deletedColumn;
+                if (deletedColumn === null)
+                    return;
                 if (context.onlyTrashed) {
-                    builder.whereNotNull(`${tableName}.${this.modelClass().deletedColumn}`);
+                    builder.whereNotNull(`${tableName}.${deletedColumn}`);
                 }
                 else if (!context.withTrashed) {
-                    builder.whereNull(`${tableName}.${this.modelClass().deletedColumn}`);
+                    builder.whereNull(`${tableName}.${deletedColumn}`);
                 }
                 this.hasFilterApplied = true;
             }
@@ -56,12 +62,16 @@ export default class SoftDeletes extends QueryBuilder {
     /**
      * Soft-deletes matching rows by stamping `deletedColumn` with the
      * current timestamp, rather than removing them from the table.
+     * Performs a real delete when `deletedColumn` is null.
      *
      * @returns {QueryBuilder<M, number>} The query builder resolving to the number of affected rows.
      */
     delete() {
+        const deletedColumn = this.modelClass().deletedColumn;
+        if (deletedColumn === null)
+            return super.delete();
         return this.update({
-            [this.modelClass().deletedColumn]: Luxon.DateTime.now()
+            [deletedColumn]: Luxon.DateTime.now()
         });
     }
     /**
@@ -83,13 +93,17 @@ export default class SoftDeletes extends QueryBuilder {
     }
     /**
      * Restores soft-deleted rows by clearing `deletedColumn` back to `null`.
-     * Only affects rows found via `onlyTrashed()`.
+     * Only affects rows found via `onlyTrashed()`. Resolves to zero without
+     * updating rows when `deletedColumn` is null.
      *
      * @returns {QueryBuilder<M, number>} The query builder resolving to the number of affected rows.
      */
     restore() {
+        const deletedColumn = this.modelClass().deletedColumn;
+        if (deletedColumn === null)
+            return this.resolve(0);
         return this.onlyTrashed().update({
-            [this.modelClass().deletedColumn]: null
+            [deletedColumn]: null
         });
     }
 }

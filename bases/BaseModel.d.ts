@@ -36,12 +36,12 @@ export default class BaseModel extends Model {
     static tableName: string;
     /** The primary key column name. */
     static idColumn: string;
-    /** The column that stores the creation timestamp. */
-    static createdColumn: string;
-    /** The column that stores the last-updated timestamp. */
-    static updatedColumn: string;
-    /** The column that stores the soft-delete timestamp. */
-    static deletedColumn: string;
+    /** The column that stores the creation timestamp, or null to disable it. */
+    static createdColumn: string | null;
+    /** The column that stores the last-updated timestamp, or null to disable it. */
+    static updatedColumn: string | null;
+    /** The column that stores the soft-delete timestamp, or null to disable it. */
+    static deletedColumn: string | null;
     /** The soft-delete-aware query builder class used for all queries on this model. */
     static QueryBuilder: typeof QueryBuilder;
     QueryBuilderType: BunQueryBuilder<this, this[]>;
@@ -55,14 +55,13 @@ export default class BaseModel extends Model {
     static get namespace(): string;
     /**
      * Objection lifecycle hook: stamps `createdColumn`/`updatedColumn`
-     * with the current time before an insert, if those columns already
-     * have a value set on the instance.
+     * with the current time before an insert when enabled and their values
+     * are null or undefined.
      */
     $beforeInsert(): void;
     /**
      * Objection lifecycle hook: stamps `updatedColumn` with the current
-     * time before an update, if that column already has a value set on
-     * the instance.
+     * time before an update when enabled and its value is null or undefined.
      */
     $beforeUpdate(): void;
     /**

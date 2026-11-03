@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.6.31](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.30...v0.6.31) - 2026-11-03
+
+### 🩹 Fixes
+- **BaseModel:** Fixed timestamp hooks creating a column named `"null"` when `createdColumn` or `updatedColumn` is set to `null`. `$beforeInsert()` and `$beforeUpdate()` now skip disabled timestamp columns, preventing invalid INSERT/UPDATE queries while preserving automatic timestamps and explicitly supplied values for enabled columns.
+- **SoftDeletes:** Models with `deletedColumn = null` no longer generate filters or updates targeting a column named `"null"`. Soft-delete query modes leave these models unfiltered, `delete()`/`del()` perform a real delete, and `restore()` resolves to `0` without issuing an update.
+
+### 📖 Changes
+- **BaseModel:** `createdColumn` and `updatedColumn` now accept `string | null`, allowing each automatic timestamp to be disabled independently. Updated the timestamp hook JSDoc to describe the actual nullish-value behavior.
+- **BaseModel:** `deletedColumn` accepts `string | null`; setting it to `null` disables soft-delete behavior for the model.
+
+### 📦 Dependencies
+- Bumped `cron-parser` from `^5.10.2` to `^5.10.3`
+- Bumped `@types/bun` (devDependency) from `^1.4.3` to `^1.4.4`
+- Bumped `eslint` (devDependency) from `^10.13.0` to `^10.14.0`
+- Bumped `tsc-alias` (devDependency) from `^1.9.8` to `^1.9.10`
+- Bumped `typescript-eslint` (devDependency) from `^8.71.0` to `^8.72.1`
+
+### ❤️Contributors
+- Havea Crenata ([@crenata](https://github.com/crenata))
+
+**Full Changelog**: https://github.com/Bejibun-Framework/bejibun-core/blob/master/CHANGELOG.md
+
+---
+
 ## [v0.6.30](https://github.com/Bejibun-Framework/bejibun-core/compare/v0.6.29...v0.6.30) - 2026-10-19
 
 ### 🩹 Fixes
